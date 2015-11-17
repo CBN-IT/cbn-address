@@ -1,11 +1,11 @@
 package ro.cbn.it.adrese.get;
 
 import ro.appenigne.web.framework.annotation.UrlPattern;
-import ro.appenigne.web.framework.utils.GsonUtils;
 import ro.appenigne.web.framework.utils.Log;
 import ro.cbn.it.adrese.core.AhWarmup;
 import ro.cbn.it.adrese.core.IController;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
@@ -19,7 +19,11 @@ public class GetAdrese extends IController {
 	public void execute() throws Exception {
 		ArrayList<LinkedHashMap<String, String>> response = new ArrayList<>();
 		long start = System.nanoTime();
-		String stringToSearch = req.getParameter("term");
+		String search = req.getParameter("search");
+		String judet = req.getParameter("nume_judet");
+		String cod_judet = req.getParameter("cod_judet");
+		String prescurtare_judet = req.getParameter("prescurtare_judet");
+		String nivel = req.getParameter("nivel");//judet, localitate superioara, localitate inferioara
 		String maxCountS = req.getParameter("maxCount");
 		int maxCount = 100;
 		try {
@@ -29,39 +33,48 @@ public class GetAdrese extends IController {
 			}
 		} catch (NumberFormatException ignored) {
 		}
-		if (stringToSearch == null || stringToSearch.isEmpty()) {
-			jsonResponse(response);
-			return;
+		
+
+		Pattern pSearch = getSearchableString(search);
+		Pattern pJudet = getSearchableString(judet);
+		Log.d(search, pSearch == null ? null : pSearch.toString(), judet, pJudet == null ? null : pJudet.toString(), cod_judet, prescurtare_judet);
+
+		AhWarmup.readFromFile();
+		for (LinkedHashMap<String, String> oras : json) {
+			String nume = oras.get("nume");
+			if (cod_judet == null || cod_judet.isEmpty() || cod_judet.equals(oras.get("judet"))) {
+				if (prescurtare_judet == null || prescurtare_judet.isEmpty() || prescurtare_judet.equalsIgnoreCase(oras.get("prescurtare_judet"))) {
+					if (pJudet == null || pJudet.matcher(oras.get("nume_judet")).find()) {
+						if (pSearch == null || pSearch.matcher(nume).find()) {
+							response.add(oras);
+							maxCount--;
+							if (maxCount == 0) {
+								break;
+							}
+						}
+					}
+				}
+			}
 		}
-		stringToSearch = stringToSearch.
-			replaceAll("[îâ]", "[îâ]").
+		DecimalFormat df = new DecimalFormat("####0.0000");
+		long end = System.nanoTime();
+		double seconds = (double) (end - start) / 1000000000.0;
+		Log.d("The search took " + df.format(seconds) + " seconds and found " + response.size() + " results.");
+		jsonResponse(response);
+	}
+
+	private Pattern getSearchableString(String s) {
+		if (s == null || s.isEmpty()) {
+			return null;
+		}
+		s = s.replaceAll("[îâ]", "[îâ]").
 			replaceAll("[a]", "[aăîâ]").
 			replaceAll("[i]", "[iîâ]").
 			replaceAll("[t]", "[tț]").
 			replaceAll("[ţ]", "[ț]").
 			replaceAll("[s]", "[sș]").
 			replaceAll("[ş]", "[ș]");
-		Log.d(req.getParameter("term"), stringToSearch);
-
-		Pattern p = Pattern.compile(stringToSearch, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
-		AhWarmup.readFromFile();
-		for (LinkedHashMap<String, String> stringStringLinkedHashMap : json) {
-			String nume = stringStringLinkedHashMap.get("nume");
-			if (p.matcher(nume).find()) {
-				response.add(stringStringLinkedHashMap);
-				maxCount--;
-				if (maxCount == 0) {
-					break;
-				}
-			}
-
-		}
-		String s = GsonUtils.getGson().toJson(response);
-		long end = System.nanoTime();
-		double seconds = (double) (end - start) / 1000000000.0;
-		Log.d("The search took " + seconds + " seconds and found " + response.size() + " results.");
-
-		jsonResponse(response);
+		return Pattern.compile(s, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 	}
 
 }
