@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cronentries>
+	<cron>
+		<url>/KeepAlive</url>
+		<description>Keep One instance on</description>
+		<schedule>every 10 minutes from 7:30 to 23:30</schedule>
+		<timezone>Europe/Bucharest</timezone>
+	</cron>
+	
+</cronentries>

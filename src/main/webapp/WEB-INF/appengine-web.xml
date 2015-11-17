@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
+	<application>${app.id}</application>
+	<module>${app.module}</module>
+	<!--App Config ${app.configSettings} End App COnfig-->
+	
+    <threadsafe>true</threadsafe>
+	
+    <system-properties>
+        <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
+        <property name="appengine.datastore.disableChunkSizeWarning" value="true"/>
+        <property name="auth-config" value="WEB-INF/oauth_consumer.properties"/>
+		<property name="appName" value="Cool CRM"/>
+    </system-properties>
+
+</appengine-web-app>
