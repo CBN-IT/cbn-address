@@ -1,6 +1,8 @@
+# Created by .ignore support plugin (hsz.mobi)
 ### AppEngine template
 # Google App Engine generated folder
 appengine-generated/
+
 
 ### Maven template
 target/
@@ -13,6 +15,10 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
+
+### Example user template template
+### Example user template
+
 # IntelliJ project files
 .idea
 *.iml
@@ -22,6 +28,8 @@ gen
 ### Bower
 bower_components/
 node_modules/
+components/
 dist/
 .sass-cache
 .tmp
+npm_debug.log

@@ -1,0 +1,601 @@
+<!--
+`cbn-select` is a highly-customizable input with selectable dropdown values.
+
+Features:
+- options can be specified using the "options" attribute (as a JSON array) or by using the `cbn-data-source` element;
+- supports single/multiple values to be selected;
+- dropdown is filterable;
+- options are editable (optional, when "freeText" is enabled);
+- you can use it to select from any JSON objects list; you can override the value, label and filter properties.
+
+Example:
+```
+    <cbn-select name="numbers" multiple freeText
+                options="[ "One", "Two", "Three" ]">
+    </cbn-select>
+```
+
+<br />
+### Styling
+
+The stock `cbn-select` has paper-like look. 
+You can customize it using the following CSS mixins: 
+
+Custom property                | Description                             | Default
+-------------------------------|-----------------------------------------|--------------------
+`--cbn-select-min-width`       | Minimum width for the options dropdown  | `{ }`
+`--cbn-select-container`       | Main select container                   | `{ }`
+`--cbn-select-ed-item`         | Selected item                           | `{ }`
+`--cbn-select-ed-item-hover`   | Selected item (hovered)                 | `{ }`
+`--cbn-select-ed-item-hlight`  | Selected item (highlighted)             | `{ }`
+`--cbn-select-edit-item`       | Item edit input                         | `{ }`
+`--cbn-select-input`           | Main select input                       | `{ }`
+`--cbn-select-options-item`    | Dropdown item / line                    | `{ }`
+`--cbn-select-options-item-hover`| Dropdown item (hovered)               | `{ }`
+`--cbn-select-loading`         | Loading message                         | `{ }`
+`--cbn-select-dropdown-btn`    | Dropdown button                         | `{ }`
+
+
+@group CBN Elements
+@element cbn-form
+@demo demo/index.html
+-->
+
+<link rel="import" href="lib/include.html" />
+
+<link rel="import" href="../iron-icon/iron-icon.html" />
+<link rel="import" href="../iron-icons/iron-icons.html" />
+<link rel="import" href="../cbn-data-source/cbn-data-source.html" />
+<link rel="import" href="../cbn-data-source/consumer-behavior.html" />
+<link rel="import" href="../iron-list/iron-list.html" />
+
+<link rel="import" href="styles.html" />
+
+<dom-module id="cbn-select">
+	<template>
+		<style include="cbn-select-styles"></style>
+		
+		<cbn-data-filter id="filter" auto="false"
+				filter-property="[[filterProperty]]" filter-mode="[[filterMode]]"></cbn-data-filter>
+		
+		<div id="container" tabindex="-1" class$="[[_computeContainerClass(_status.open)]]">
+			
+			<template is="dom-if" if="[[_computeShowChips(multiple,alwaysShowChips)]]">
+				<template is="dom-repeat" items="[[_selectedOptions]]" as="item">
+					<div class$="[[_computeSelectedItemClass(item.highlighted,item.editing)]]"
+							on-tap="_selectedOptionTap" on-dblclick="_selectedOptionDblClick">
+						
+						<template is="dom-if" if="[[item.editing]]">
+							<input class="option-editor" type="text" title="Edit value" value="{{_editQuery::input}}"
+								   autocomplete="off" size$="[[_computeEditInputSize(_editQuery)]]">
+						</template>
+						<template is="dom-if" if="[[!item.editing]]">[[item.label]]</template>
+						
+						<a class="removeBtn" on-tap="_removeBtnTap">
+							<iron-icon icon="icons:backspace"></iron-icon>
+						</a>
+					</div>
+				</template>
+			</template>
+			
+			<input id="input" type="text" value="{{_inputValue}}" class="text-input" autocomplete="off"
+					title="[[placeholder]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]"
+					on-tap="_dropDownButtonTap" on-input="_queryInputHandler">
+			
+			<div id="options-wrapper">
+				<template is="dom-if" if="[[useIronList]]">
+					<iron-list id="ironList" class="options-list" items="[[_filteredOptions]]" as="item">
+						<template>
+							<div class$="[[_computeDropdownItemClass(item.highlighted)]]"
+								 on-tap="_dropdownOptionTap">[[item.label]]</div>
+						</template>
+					</iron-list>
+				</template>
+				<template is="dom-if" if="[[!useIronList]]">
+					<div id="options" class="options-list">
+						<template is="dom-repeat" items="[[_filteredOptions]]" as="item">
+							<div class$="[[_computeDropdownItemClass(item.highlighted)]]"
+								 on-tap="_dropdownOptionTap">[[item.label]]</div>
+						</template>
+						<template is="dom-if" if="[[_optionsLoading]]">
+							<div class="loading">Loading options ...</div>
+						</template>
+						<template is="dom-if" if="[[_computeEmptyOptionsList(_optionsLoading, _filteredOptions)]]">
+							<div class="empty">No available options.</div>
+						</template>
+					</div>
+				</template>
+			</div>
+			<div id="dropdownBtn" on-tap="_dropDownButtonTap">
+				<iron-icon icon="icons:arrow-drop-down"></iron-icon>
+			</div>
+		</div>
+		
+	</template>
+</dom-module>
+
+<script>
+	(function (scope) {
+		
+		//noinspection JSUnusedGlobalSymbols
+		scope.CbnSelectPrototype = {
+			is: 'cbn-select',
+			
+			properties: {
+				
+				/**
+				 * Whether multiple selected values are allowed.
+				 * If true, `value` will be an Array.
+				 */
+				multiple: {
+					type: Boolean,
+					value: false,
+					reflectToAttribute: true
+				},
+				
+				/**
+				 * Whether the entered value needs to be strictly found inside the options array (false) or any 
+				 * text can be freely entered by the user (true).
+				 * Should only be used if the option items are String (and *not* Object).
+				 */
+				freeText: {
+					type: Boolean,
+					value: false
+				},
+				
+				/**
+				 * Whether duplicate options are allowed to be selected. Only used if the `multiple` attribute is true.
+				 * If this is false (default), the selected options are removed from the dropdown list and inserting duplicate value is a no-op.
+				 */
+				allowDuplicates: {
+					type: Boolean,
+					value: false
+				},
+				
+				/**
+				 * An array with the select options.
+				 * Also accepts a callback function (as property).
+				 * 
+				 * Cannot be used together with {@link #dataSource}.
+				 */
+				options: {
+					type: Array,
+					value: function() { return []; }
+				},
+				
+				/**
+				 * Whether to use iron-list for rendering the dropdown options.
+				 */
+				useIronList: {
+					type: Boolean,
+					value: false
+				},
+				
+				/**
+				 * The selector or reference to a `cbn-data-source` element that supplies the available options.
+				 * Exclusive with {@link #options}.
+				 * 
+				 * The element is searched for inside the parent form.
+				 */
+				dataSource: {
+					type: String
+				},
+				
+				/**
+				 * Specifies the path to an option item to get the item label text from.
+				 * Only used if the option is an Object (if String, then its value will be used as both label and 
+				 * output value).
+				 */
+				itemLabelProperty: {
+					type: String,
+					value: 'label'
+				},
+				
+				/**
+				 * Specifies what property of the option object to set as model value.
+				 * 
+				 * Use empty/false if you want the entire object to be used.
+				 */
+				itemValueProperty: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Specifies what property of the option object to set as hash (used for comparing two item objects).
+				 */
+				itemHashProperty: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Specify the option item property to use to filter the options list.
+				 * Specify empty value if your data is a String list and you want to compare the items directly.
+				 */
+				filterProperty: {
+					type: String,
+					value: 'label'
+				},
+				
+				/**
+				 * The mode to use for filtering the displayed options. 
+				 * 
+				 * Check cbn-data-filter's `filterMode` for all available modes.
+				 */
+				filterMode: {
+					type: String,
+					value: 'contains-cid'
+				},
+				
+				/**
+				 * The placeholder to show when there is no value entered.
+				 */
+				placeholder: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Set this to true to always show the selection chips.
+				 * Automatically set to true when multiple selection is enabled.
+				 */
+				alwaysShowChips: {
+					type: Boolean,
+					value: false
+				}
+				
+			},
+			
+			behaviors: [
+				CbnForm.InputElement,
+				CbnForm.Validatable,
+				CbnForm.DynamicElement,
+				CbnDataSource.ConsumerBehavior,
+				scope.SelectUIBehavior,
+				scope.SelectOptionsBehavior
+			],
+			
+			/**
+			 * Element's dynamic attributes.
+			 */
+			dynamicAttributes: {
+				"multiple": { type: 'attribute' },
+				"freeText": { type: 'attribute' },
+				"allowDuplicates": { type: 'attribute' },
+				"options": { type: 'property' },
+				"dataSource": { type: 'property' },
+				"itemLabelProperty": { type: 'attribute' },
+				"itemValueProperty": { type: 'attribute' },
+				"filterProperty": { type: 'attribute' },
+				"filterMode": { type: 'attribute' },
+				"placeholder": { type: 'attribute' },
+				"alwaysShowChips": { type: 'attribute' }
+			},
+			
+			hostAttributes: {
+				'tab-index': -1
+			},
+			
+			listeners: {
+				'mousedown': '_mouseDownHandler'
+			},
+			
+			// Private methods: 
+			
+			/**
+			 * Search scope for `CbnDataSource.ConsumerBehavior`.
+			 */
+			get _searchScope() { return this.parentForm; },
+			
+			/**
+			 * Used to normalize element's event handler methods.
+			 */
+			created: function() {
+				// bind some internally used event handlers to 'this'
+				this._focusHandler = this._focusHandler.bind(this);
+				this._blurHandler = this._blurHandler.bind(this);
+				this._keyDownHandler = this._keyDownHandler.bind(this);
+			},
+			
+			/**
+			 * Callback when an element instance is attached to the DOM. Used to set up event handlers.
+			 */
+			attached: function() {
+				// capture those events for the element itself and all its children
+				this.addEventListener('focus', this._focusHandler, true);
+				this.addEventListener('blur', this._blurHandler, true);
+				this.addEventListener('keydown', this._keyDownHandler, true);
+			},
+			
+			/**
+			 * Callback when an element instance is attached to the DOM. Used to clean up event handlers.
+			 */
+			detached: function() {
+				this.removeEventListener('focus', this._focusHandler, true);
+				this.removeEventListener('blur', this._blurHandler, true);
+				this.removeEventListener('keydown', this._keyDownHandler, true);
+			},
+			
+			// Event handlers: 
+			
+			/**
+			 * Captures the focus event on any of the element's children.
+			 */
+			_focusHandler: function() {
+				this._refocus = false;
+				if (this._status.focused) 
+					return;
+				this.set('_status.focused', true);
+				
+				if (!this._status.mode)
+					this._setMode('query');
+			},
+			
+			/**
+			 * Captures the blur event on any of the element's children.
+			 */
+			_blurHandler: function() {
+				this.async(function() {
+					if (this._refocus || this.contains(document.activeElement)) {
+						// a child element was clicked, maintain focus
+						this.focus();
+					} else {
+						if (this._inputValue) {
+							this.select(this._inputValue);
+							this._clearQueryInput();
+						}
+						this.set('_status.focused', false);
+						this._setMode('');
+					}
+				});
+			},
+			
+			/**
+			 * Receives all mouse down events (for the element and its children).
+			 * Used to prevent losing focus when one of the children is clicked.
+			 */
+			_mouseDownHandler: function() {
+				this._refocus = true;
+				setTimeout(function() {
+					// WARNING: needs to execute after macrotask!
+					this._refocus = false;
+				}.bind(this), 0);
+			},
+			
+			/**
+			 * Captures the keyDown for the select element or any of its children.
+			 * @param {Event} event The captured event.
+			 */
+			_keyDownHandler: function(event) {
+				function isPrintable(event) {
+					var keycode = event.keyCode;
+					return (keycode > 47 && keycode < 58)   || // number keys
+						keycode == 32 || keycode == 13   || // spacebar & return key(s) (if you want to allow carriage returns)
+						(keycode > 64 && keycode < 91)   || // letter keys
+						(keycode > 95 && keycode < 112)  || // numpad keys
+						(keycode > 185 && keycode < 193) || // ;=,-./` (in order)
+						(keycode > 218 && keycode < 223);   // [\]' (in order)
+				}
+				
+				var proceed, dispatch = this._keyDispatch[this._status.mode][event.keyCode] || this._keyDispatch[event.keyCode];
+				var hasModifiers = event['altGraphKey'] || event['metaKey'] || event.altKey || event.shiftKey;
+				if (dispatch && !hasModifiers) {
+					if (typeof dispatch == 'number' || typeof dispatch == 'string') {
+						dispatch = this._keyDispatch[this._status.mode][dispatch];
+					}
+					if (typeof dispatch == 'function') {
+						proceed = dispatch.call(this, event);
+					}
+					if (!proceed) {
+						event.preventDefault();
+					}
+					
+				} else if (isPrintable(event) && this._status.mode == 'view') {
+					// focus the input
+					this._setMode('query');
+					this.$.input.value += String.fromCharCode(1*event.charCode);
+				}
+			},
+			
+			/**
+			 * A map of keydown event handlers, indexed by element mode and keyCode.
+			 */
+			_keyDispatch: {
+				'': {
+				},
+				
+				view: { // when one of the chosen options is highlighted
+					
+					/* backspace */  8: function() { /* Deselects the currently highlighted value. */
+						this._removeSelectedOption();
+					},
+					
+					/* enter     */ 13: function() {
+						if (this._highlighted.selectedOptionIdx < 0 || 
+								this._highlighted.selectedOptionIdx >= this._selectedOptions.length) 
+							return;
+						this._setMode('edit', this._highlighted.selectedOptionIdx);
+					},
+					
+					/* escape    */ 27: function() {
+						this._setMode('query');
+					},
+					
+					/* left arr  */ 37: function() { this._highlightSelectedItem(-1, true); },
+					/* right arr */ 39: function() {
+						if (this._highlighted.selectedOptionIdx >= (this._selectedOptions.length - 1)) {
+							this._setMode('query');
+						} else {
+							this._highlightSelectedItem(1, true);
+						}
+					},
+					/* delete    */ 46: function() { this._removeSelectedOption(); }
+				},
+				
+				query: { // when the main/query input is focused
+					
+					/* backspace */ 8: function() {
+						if (!this._inputValue.length) {
+							// another backspace removes the last selected item 
+							if (this._selectedOptions.length) {
+								this.deselect(this._selectedOptions[this._selectedOptions.length-1].item);
+							}
+							return false;
+						}
+						return true;
+					},
+					
+					/* escape    */ 27: function() {
+						this._setMode('');
+					},
+					
+					/* enter     */ 13: function() {
+						if (this._highlighted.filteredOptionIdx > -1) {
+							this.select(this._filteredOptions[this._highlighted.filteredOptionIdx].item);
+						} else {
+							this.select(this._inputValue);
+						}
+						this._clearQueryInput();
+						if (!this._showChips) {
+							this.blur();
+						}
+					},
+					
+					/* left arr  */ 37: function() {
+						if (this._inputValue.length || !this._selectedOptions.length)
+							return true;
+						this._setMode('view');
+						this._highlightSelectedItem('last');
+						return false;
+					}
+				},
+				
+				edit: { // when a selected option is currently being edited
+					
+					/* enter  */ 13: function() { this._saveEditedOption(); },
+					
+					/* escape */ 27: function() {
+						this._setMode('view', this._highlighted.selectedOptionIdx);
+					}
+				},
+				36: function(){ this._setMode('query'); this._highlightDropdownItem('first');  }, // home
+				33: function(){ this._setMode('query'); this._highlightDropdownItem(-5, true); }, // page up
+				38: function(){ this._setMode('query'); this._highlightDropdownItem(-1, true); }, // up arrow
+				34: function(){ this._setMode('query'); this._highlightDropdownItem(5, true);  }, // page down
+				40: function(){ this._setMode('query'); this._highlightDropdownItem(1, true);  }, // down arrow
+				35: function(){ this._setMode('query'); this._highlightDropdownItem('last');   }, // end
+				
+				/* escape    */ 27: function() {
+					this._clearQueryInput();
+					this.blur();
+				}
+			},
+			
+			/**
+			 * Called when a dropdown option has been clicked / tapped.
+			 * 
+			 * @param {Object} event The captured event.
+			 */
+			_dropdownOptionTap: function(event) {
+				var item = event.model.item;
+				this.select(item.item);
+				this._clearQueryInput();
+				if (!this.multiple) {
+					this._setMode('view');
+					this.set('_status.open', false);
+				}
+			},
+			
+			/**
+			 * Called when a selected option has been clicked / tapped.
+			 * 
+			 * @param {Object} event The captured event.
+			 */
+			_selectedOptionTap: function(event) {
+				/** @namespace event.model */
+				var item = event.model.item;
+				if (!item) return;
+				if (item.editing) return; // don't interrupt the edit!
+				var idx = this._selectedOptions.indexOf(item);
+				this._setMode('view', idx);
+			},
+			
+			/**
+			 * Called when a selected option has been double clicked.
+			 * Enables the edit mode on the clicked item.
+			 * 
+			 * @param {Object} event The captured event.
+			 */
+			_selectedOptionDblClick: function(event) {
+				if (this._status.mode != 'view' && this._status.mode != 'query') 
+					return;
+				
+				/** @namespace event.model */
+				var item = event.model.item;
+				var idx = this._selectedOptions.indexOf(item);
+				if (!item) return;
+				this._highlightSelectedItem(idx);
+				this._setMode('edit', this._highlighted.selectedOptionIdx);
+				
+				// wait for the UI to update
+				this.async(function() {
+					var optionEditor = event.target.querySelector('.option-editor');
+					if (optionEditor) {
+						optionEditor.focus();
+						optionEditor.setSelectionRange(0, optionEditor.value.length);
+					}
+				});
+			},
+			
+			/**
+			 * Called when the remove selected option button has been clicked.
+			 * 
+			 * @param {Object} event The captured event.
+			 */
+			_removeBtnTap: function(event) {
+				/** @namespace event.model */
+				var item = event.model.item;
+				event.stopPropagation();
+				if (!item) return;
+				this.deselect(item.item);
+			},
+			
+			/**
+			 * Called when the dropdown opener button is clicked/tapped.
+			 */
+			_dropDownButtonTap: function() {
+				this._setMode('query');
+			},
+			
+			/**
+			 * Called when the query input has been modified.
+			 * 
+			 * @param {Event} event The input event object.
+			 */
+			_queryInputHandler: function(event) {
+				this._inputValue = event.target.value;
+				
+				// clear any dropdown option selection
+				this._highlightDropdownItem(null);
+				
+				// query/filter the options on the fly
+				this._queryOptions(this._inputValue);
+				if (!this.freeText) {
+					// highlight the first option found
+					this._highlightDropdownItem('first');
+				}
+			}
+			
+		};
+		
+		Polymer(scope.CbnSelectPrototype);
+		
+		CbnForm.registerElement('cbn-select', {
+			types: [ 'select' ],
+			priority: 1
+		});
+		
+	})(window.CbnForm.CbnSelect);
+	
+</script>
