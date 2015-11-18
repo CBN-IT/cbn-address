@@ -20,6 +20,14 @@ public abstract class IController extends AbstractIController {
 			resp.getWriter().print(gson.toJson(o));
 		}
 	}
+	public void jsonResponsePrettyPrint(Object o) throws IOException {
+		resp.setContentType("application/json; charset=UTF-8");
+		if (o instanceof String) {
+			resp.getWriter().print(o);
+		} else {
+			resp.getWriter().print(GsonUtils.getGsonPrettyPrint().toJson(o));
+		}
+	}
 
 	public void textResponse(Object o) throws IOException {
 		resp.setContentType("plain/text; charset=UTF-8");

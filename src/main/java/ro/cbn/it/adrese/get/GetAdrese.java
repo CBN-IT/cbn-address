@@ -24,6 +24,7 @@ public class GetAdrese extends IController {
 		String cod_judet = req.getParameter("cod_judet");
 		String prescurtare_judet = req.getParameter("prescurtare_judet");
 		String nivel = req.getParameter("nivel");//judet, localitate superioara, localitate inferioara
+		String prettyPrint = req.getParameter("prettyPrint");
 		String maxCountS = req.getParameter("maxCount");
 		int maxCount = 100;
 		try {
@@ -60,7 +61,11 @@ public class GetAdrese extends IController {
 		long end = System.nanoTime();
 		double seconds = (double) (end - start) / 1000000000.0;
 		Log.d("The search took " + df.format(seconds) + " seconds and found " + response.size() + " results.");
-		jsonResponse(response);
+		if ("true".equals(prettyPrint)) {
+			jsonResponsePrettyPrint(response);
+		} else {
+			jsonResponse(response);
+		}
 	}
 
 	private Pattern getSearchableString(String s) {
