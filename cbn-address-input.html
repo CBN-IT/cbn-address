@@ -1,0 +1,315 @@
+<!--
+`cbn-address-input` implements a structured addresses select input.
+
+@group CBN Elements
+@element cbn-address
+@demo demo/index.html
+-->
+
+<link rel="import" href="../polymer/polymer.html" />
+<link rel="import" href="../cbn-form/lib/include.html" />
+<link rel="import" href="../cbn-select/cbn-select.html" />
+
+<dom-module id="cbn-address-input">
+	<template>
+		
+		<cbn-data-source id="defaultDataSource">
+			<cbn-ajax-provider auto-ajax ajax-parameter="" ajax-interval="200">
+				<iron-ajax url="[[url]]" handle-as="json"></iron-ajax>
+			</cbn-ajax-provider>
+		</cbn-data-source>
+		
+		<cbn-select id="select" name="[[name]]" value="{{ _selectedValue }}" multiple
+					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
+					use-iron-list="[[useIronList]]"
+					no-item-hash-property="siruta"
+		></cbn-select>
+		
+	</template>
+</dom-module>
+
+<script>
+	(function (scope) {
+		scope = window.CbnForm.CbnAdresa = {};
+		
+		//noinspection JSUnusedGlobalSymbols
+		scope.Prototype = Polymer({
+			is: 'cbn-address-input',
+			
+			properties: {
+				
+				/**
+				 * The URL to the address provider servlet.
+				 */
+				url: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Whether to use iron-list for rendering the dropdown options.
+				 */
+				useIronList: {
+					type: Boolean,
+					value: false
+				},
+				
+				/**
+				 * The selector or reference to a `cbn-data-source` element that supplies the available options.
+				 * Exclusive with {@link #options}.
+				 * 
+				 * The element is searched for inside the parent form.
+				 */
+				dataSource: {
+					type: String,
+					value: '',
+					observer: '_dataSourceChanged'
+				},
+				
+				/**
+				 * The placeholder to show when there is no value entered.
+				 */
+				placeholder: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Describes the segments of the address.
+				 */
+				addressSegments: {
+					type: Array,
+					value: function() {
+						return [
+							{ param: 'county' },
+							{ param: 'loc_sup' },
+							{ param: 'loc_inf' }
+						];
+					}
+				},
+				
+				/**
+				 * The data source to use.
+				 */
+				_dataSource: {
+					type: Object,
+					value: null
+				},
+				
+				/**
+				 * The internal select's value.
+				 */
+				_selectedValue: {
+					type: Array,
+					value: function() { return []; }
+				}
+				
+			},
+			
+			behaviors: [
+				CbnForm.InputElement,
+				CbnForm.Validatable
+			],
+			
+			/**
+			 * Element's dynamic attributes.
+			 */
+			dynamicAttributes: {
+				"freeText": { type: 'attribute' },
+				"allowDuplicates": { type: 'attribute' },
+				"options": { type: 'property' },
+				"dataSource": { type: 'property' },
+				"itemLabelProperty": { type: 'attribute' },
+				"itemValueProperty": { type: 'attribute' },
+				"filterProperty": { type: 'attribute' },
+				"filterMode": { type: 'attribute' },
+				"placeholder": { type: 'attribute' },
+				"alwaysShowChips": { type: 'attribute' }
+			},
+			
+			// Private methods: 
+			
+			ready: function() {
+				if (!this.dataSource && this.$.defaultDataSource) {
+					this._dataSource = this.$.defaultDataSource;
+				}
+				this._enhanceCbnSelect();
+			},
+			
+			/**
+			 * Called when the data source attribute is changed.
+			 * @param dataSource The new data source set.
+			 */
+			_dataSourceChanged: function(dataSource) {
+				if (dataSource) {
+					this._dataSource = dataSource;
+				} else {
+					this._dataSource = ( this.$ && this.$.defaultDataSource ? this.$.defaultDataSource : null);
+				}
+			},
+			
+			/**
+			 * Enhances the internal `cbn-select` element with the required custom functionality / behaviors.
+			 */
+			_enhanceCbnSelect: function() {
+				if (!this.$.select) return;
+				var select = this.$.select;
+				var self = this;
+				
+				/**
+				 * Processes the specified query before sending it to the data source.
+				 * 
+				 * @param {String} query The user-entered query text.
+				 * @return {Object} The actual query to send to the server.
+				 */
+				select._processDataSourceQuery = function(query) {
+					var newQuery = {
+						search: query,
+						nume_judet: null,
+						cod_judet: null,
+						nume_superior: null
+					};
+					if (this.value && this.value.length) {
+						this.value.forEach(function(item) {
+							if (item.nivel == 'judet') {
+								if (item.siruta) {
+									newQuery.cod_judet = item.siruta;
+								} else {
+									newQuery.nume_judet = item.nume;
+								}
+							}
+							if (item.nivel == 'localitate superioara') {
+								newQuery.nume_superior = item.nume;
+							}
+						});
+					}
+					return newQuery;
+				};
+				
+				/**
+				 * Returns the dropdown label of the item.
+				 */
+				select._getItemLabel = function(item) {
+					if (!item || typeof item != 'object') return item;
+					
+					var label = item.nume;
+					if (item.nume_superior) {
+						label += ', ' + item.nume_superior;
+					}
+					if (item.nivel != 'judet' && item.nume_judet) {
+						label += ', ' + item.prescurtare_judet;
+					}
+					return label;
+				};
+				
+				select._ui_selectedOptionsChanged = function() {
+					var selectedOptions = [];
+					
+					this._selectedOptions.forEach(function(selectedOpt, i) {
+						// clone the object
+						selectedOpt = JSON.parse(JSON.stringify(selectedOpt));
+						selectedOpt.highlighted = !!selectedOpt.highlighted;
+						selectedOpt.editing = !!selectedOpt.editing;
+						selectedOpt.label = selectedOpt.item.nume;
+						selectedOptions.push(selectedOpt);
+					}, this);
+					if (this._selectedOptions.length) {
+						var lastItem = this._selectedOptions[this._selectedOptions.length-1].item;
+						if (lastItem.nivel == 'localitate inferioara') {
+							this._closeDropdown();
+						}
+					}
+					
+					// set the displayed item selection
+					this._displaySelectedOptions = selectedOptions;
+					
+					this.debounce('_selectedOptionsChanged', function() {
+						this._queryOptions(this._currentFilterValue);
+						this._updateInputValue();
+					});
+				};
+				
+				/**
+				 * Normalize the selected address segments.
+				 * 
+				 * @param {Array} items The selected items.
+				 * @return {Array} The items to commit as value.
+				 */
+				select._commitValueCallback = function (items) {
+					if (!items.length) return items;
+					
+					var address = self._segmentsToAddress(items);
+					if (!address) return false; // roll back
+					
+					// normalize the address segments
+					return self._addressToSegments(address);
+				};
+			},
+			
+			/**
+			 * Converts an address object to a segment list.
+			 * @param {Object} address The address object.
+			 * @return {Array} The segments of the address.
+			 */
+			_addressToSegments: function(address) {
+				var items = [];
+				if (address.nume_judet) {
+					items.push({
+						"nivel": "judet",
+						"nume": address.nume_judet,
+						"nume_judet": address.nume_judet,
+						"prescurtare_judet": address.prescurtare_judet
+					});
+				}
+				if (address.nume_superior) {
+					items.push({
+						"nivel": "localitate superioara",
+						"nume": address.nume_superior,
+						"nume_judet": address.nume_judet
+					});
+				}
+				if (address.nume_localitate) {
+					items.push({
+						"nivel": "localitate inferioara",
+						"nume": address.nume_localitate,
+						"nume_superior": address.nume_superior,
+						"nume_judet": address.nume_judet
+					});
+				}
+				return items;
+			},
+			
+			/**
+			 * Converts a segments list to an address object.
+			 * 
+			 * @param {Array} items The items.
+			 * @return {Object|Boolean} The resulting address object, false if invalid.
+			 */
+			_segmentsToAddress: function(items) {
+				var lastItem = items[items.length-1];
+				if (typeof lastItem != 'object') return false;
+				var address = {};
+				if (lastItem.nivel == 'judet') {
+					address.nume_judet = lastItem.nume_judet;
+					address.prescurtare_judet = lastItem.prescurtare_judet;
+				} else if (lastItem.nivel == 'localitate superioara') {
+					address.nume_judet = lastItem.nume_judet;
+					address.nume_superior = lastItem.nume;
+				} else {
+					address.nume_judet = lastItem.nume_judet;
+					address.nume_superior = lastItem.nume_superior;
+					address.nume_localitate = lastItem.nume;
+				}
+				return address;
+			}
+			
+		});
+		
+		CbnForm.registerElement('cbn-address-input', {
+			types: [ 'address' ],
+			priority: 1
+		});
+		
+	})();
+	
+</script>

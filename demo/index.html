@@ -9,8 +9,7 @@
 	<link rel="import" href="../../font-roboto/roboto.html" />
 	
 	<link rel="import" href="../../cbn-form/cbn-form.html">
-	<link rel="import" href="../cbn-select.html" />
-	<link rel="import" href="../cbn-paper-select.html" />
+	<link rel="import" href="../cbn-address-input.html" />
 	
 	<style>
 		body {
@@ -36,14 +35,8 @@
 		
 		<form id="demoForm" is="cbn-form" model>
 			
-			<cbn-paper-select use-iron-list label="Single" name="pone" options="[[demoOptions1]]"></cbn-paper-select>
-			
-			<cbn-paper-select label="Multiple" name="ptwo" multiple options="[[demoOptions1]]"></cbn-paper-select>
-			
-			<cbn-paper-select label="Multiple FreeText" name="pthree" multiple free-text options="[[demoOptions1]]"></cbn-paper-select>
-			
-			<cbn-paper-select style="width: 100px;" label="Small Text" 
-							  name="pthree" free-text options="[[demoOptions1]]"></cbn-paper-select>
+			<cbn-address-input label="Address Input" name="addr1" 
+							   url="http://localhost:8888/get/Adrese"></cbn-address-input>
 			
 		</form>
 		
@@ -55,10 +48,6 @@
 
 <script>
 	var tpl = document.querySelector('template[is=dom-bind]');
-	tpl.demoOptions1 = [];
-	for (i=0; i<30; i++) {
-		tpl.demoOptions1.push("x" + i);
-	}
 	
 	tpl.addEventListener('dom-change', function(){
 		/** @namespace tpl.$.demoForm */

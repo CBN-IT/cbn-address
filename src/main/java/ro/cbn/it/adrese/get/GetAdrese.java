@@ -17,13 +17,16 @@ public class GetAdrese extends IController {
 
 	@Override
 	public void execute() throws Exception {
+		// set CORS headers
+		this.resp.addHeader("Access-Control-Allow-Origin", "*");
+		
 		ArrayList<LinkedHashMap<String, String>> response = new ArrayList<>();
 		long start = System.nanoTime();
 		String search = req.getParameter("search");
 		String judet = req.getParameter("nume_judet");
 		String cod_judet = req.getParameter("cod_judet");
 		String prescurtare_judet = req.getParameter("prescurtare_judet");
-		String nivel = req.getParameter("nivel");//judet, localitate superioara, localitate inferioara
+		String superior = req.getParameter("nume_superior");
 		String prettyPrint = req.getParameter("prettyPrint");
 		String maxCountS = req.getParameter("maxCount");
 		int maxCount = 100;
@@ -35,7 +38,6 @@ public class GetAdrese extends IController {
 		} catch (NumberFormatException ignored) {
 		}
 		
-
 		Pattern pSearch = getSearchableString(search);
 		Pattern pJudet = getSearchableString(judet);
 		Log.d(search, pSearch == null ? null : pSearch.toString(), judet, pJudet == null ? null : pJudet.toString(), cod_judet, prescurtare_judet);
@@ -46,11 +48,13 @@ public class GetAdrese extends IController {
 			if (cod_judet == null || cod_judet.isEmpty() || cod_judet.equals(oras.get("judet"))) {
 				if (prescurtare_judet == null || prescurtare_judet.isEmpty() || prescurtare_judet.equalsIgnoreCase(oras.get("prescurtare_judet"))) {
 					if (pJudet == null || pJudet.matcher(oras.get("nume_judet")).find()) {
-						if (pSearch == null || pSearch.matcher(nume).find()) {
-							response.add(oras);
-							maxCount--;
-							if (maxCount == 0) {
-								break;
+						if (superior == null || superior.isEmpty() || superior.equals(oras.get("nume_superior"))) {
+							if (pSearch == null || pSearch.matcher(nume).find()) {
+								response.add(oras);
+								maxCount--;
+								if (maxCount == 0) {
+									break;
+								}
 							}
 						}
 					}
@@ -72,13 +76,13 @@ public class GetAdrese extends IController {
 		if (s == null || s.isEmpty()) {
 			return null;
 		}
-		s = s.replaceAll("[îâ]", "[îâ]").
-			replaceAll("[a]", "[aăîâ]").
-			replaceAll("[i]", "[iîâ]").
-			replaceAll("[t]", "[tț]").
-			replaceAll("[ţ]", "[ț]").
-			replaceAll("[s]", "[sș]").
-			replaceAll("[ş]", "[ș]");
+		s = s.toLowerCase().replaceAll("[îâ]", "[îâ]")
+			.replaceAll("[a]", "[aăîâ]")
+			.replaceAll("[i]", "[iîâ]")
+			.replaceAll("[t]", "[tț]")
+			.replaceAll("[ţ]", "[ț]")
+			.replaceAll("[s]", "[sș]")
+			.replaceAll("[ş]", "[ș]");
 		return Pattern.compile(s, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 	}
 
