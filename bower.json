@@ -9,7 +9,7 @@
         "../",
         "test",
         "tests",
-        "src"
+        "src", "pom.xml"
     ],
     "dependencies": {
         "polymer": "Polymer/polymer#^1.2",

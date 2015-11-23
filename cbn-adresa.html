@@ -1,0 +1,213 @@
+<!--
+`cbn-adresa` etc.
+
+@group CBN Elements
+@element cbn-adresa
+@demo demo/index.html
+-->
+
+<link rel="import" href="../cbn-select/cbn-select.html" />
+
+<dom-module id="cbn-adresa">
+	<template>
+		
+		<cbn-data-source id="defaultDataSource">
+			<cbn-ajax-provider auto-ajax ajax-parameter="query">
+				<iron-ajax url="[[url]]" handle-as="json"></iron-ajax>
+			</cbn-ajax-provider>
+		</cbn-data-source>
+		
+		<cbn-select id="select" name="[[name]]" value="{{ _selectedValue }}"
+					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
+					use-iron-list="[[useIronList]]"
+		></cbn-select>
+		
+	</template>
+</dom-module>
+
+<script>
+	(function (scope) {
+		scope = window.CbnForm.CbnAdresa = {};
+		
+		//noinspection JSUnusedGlobalSymbols
+		Polymer({
+			is: 'cbn-adresa',
+			
+			properties: {
+				
+				/**
+				 * The URL to the address provider servlet.
+				 */
+				url: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Whether to use iron-list for rendering the dropdown options.
+				 */
+				useIronList: {
+					type: Boolean,
+					value: false
+				},
+				
+				/**
+				 * The selector or reference to a `cbn-data-source` element that supplies the available options.
+				 * Exclusive with {@link #options}.
+				 * 
+				 * The element is searched for inside the parent form.
+				 */
+				dataSource: {
+					type: String,
+					value: '',
+					observer: '_dataSourceChanged'
+				},
+				
+				/**
+				 * Specifies the path to an option item to get the item label text from.
+				 * Only used if the option is an Object (if String, then its value will be used as both label and 
+				 * output value).
+				 */
+				itemLabelProperty: {
+					type: String,
+					value: 'label'
+				},
+				
+				/**
+				 * Specifies what property of the option object to set as model value.
+				 * 
+				 * Use empty/false if you want the entire object to be used.
+				 */
+				itemValueProperty: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Specifies what property of the option object to set as hash (used for comparing two item objects).
+				 */
+				itemHashProperty: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Specify the option item property to use to filter the options list.
+				 * Specify empty value if your data is a String list and you want to compare the items directly.
+				 */
+				filterProperty: {
+					type: String,
+					value: 'label'
+				},
+				
+				/**
+				 * The mode to use for filtering the displayed options. 
+				 * 
+				 * Check cbn-data-filter's `filterMode` for all available modes.
+				 */
+				filterMode: {
+					type: String,
+					value: 'contains-cid'
+				},
+				
+				/**
+				 * The placeholder to show when there is no value entered.
+				 */
+				placeholder: {
+					type: String,
+					value: ''
+				},
+				
+				/**
+				 * Describes the segments of the address.
+				 */
+				addressSegments: {
+					type: Array,
+					value: function() {
+						return [
+							{ param: 'county' },
+							{ param: 'upper_loc' },
+							{ param: 'lower_loc' }
+						];
+					}
+				},
+				
+				/**
+				 * The data source to use.
+				 */
+				_dataSource: {
+					type: Object,
+					value: null
+				}
+				
+			},
+			
+			behaviors: [
+				CbnForm.InputElement,
+				CbnForm.Validatable
+			],
+			
+			/**
+			 * Element's dynamic attributes.
+			 */
+			dynamicAttributes: {
+				"freeText": { type: 'attribute' },
+				"allowDuplicates": { type: 'attribute' },
+				"options": { type: 'property' },
+				"dataSource": { type: 'property' },
+				"itemLabelProperty": { type: 'attribute' },
+				"itemValueProperty": { type: 'attribute' },
+				"filterProperty": { type: 'attribute' },
+				"filterMode": { type: 'attribute' },
+				"placeholder": { type: 'attribute' },
+				"alwaysShowChips": { type: 'attribute' }
+			},
+			
+			// Private methods: 
+			
+			ready: function() {
+				if (!this.dataSource && this.$.defaultDataSource) {
+					this._dataSource = this.$.defaultDataSource;
+				}
+			},
+			
+			/**
+			 * Called when the data source attribute is changed.
+			 * @param dataSource The new data source set.
+			 */
+			_dataSourceChanged: function(dataSource) {
+				if (dataSource) {
+					this._dataSource = dataSource;
+				} else {
+					this._dataSource = ( this.$ && this.$.defaultDataSource ? this.$.defaultDataSource : null);
+				}
+			},
+			
+			/**
+			 * Enhances the internal `cbn-select` element with the required custom functionality / behaviors.
+			 */
+			_enhanceCbnSelect: function() {
+				if (!this.$.select) return;
+				var select = this.$.select;
+				var self = this;
+				
+				/**
+				 * Processes the specified query before sending it to the data source.
+				 * 
+				 * @param {String} query The user-entered query text.
+				 */
+				select._processDataSourceQuery = function(query) {
+					
+				};
+			}
+			
+		});
+		
+		CbnForm.registerElement('cbn-adresa', {
+			types: [ 'address' ],
+			priority: 1
+		});
+		
+	})();
+	
+</script>
