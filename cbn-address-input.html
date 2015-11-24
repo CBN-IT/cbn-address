@@ -19,7 +19,7 @@
 			</cbn-ajax-provider>
 		</cbn-data-source>
 		
-		<cbn-select id="select" name="[[name]]" value="{{ _selectedValue }}" multiple
+		<cbn-select id="select" value="{{ _selectedValue }}" multiple
 					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
 					use-iron-list="[[useIronList]]"
 					no-item-hash-property="siruta"
@@ -37,6 +37,15 @@
 			is: 'cbn-address-input',
 			
 			properties: {
+				
+				/**
+				 * The input's value (an address object).
+				 */
+				value: {
+					type: Object,
+					value: null,
+					observer: '_valueChanged'
+				},
 				
 				/**
 				 * The URL to the address provider servlet.
@@ -116,16 +125,14 @@
 			 */
 			dynamicAttributes: {
 				"freeText": { type: 'attribute' },
-				"allowDuplicates": { type: 'attribute' },
-				"options": { type: 'property' },
 				"dataSource": { type: 'property' },
-				"itemLabelProperty": { type: 'attribute' },
-				"itemValueProperty": { type: 'attribute' },
-				"filterProperty": { type: 'attribute' },
-				"filterMode": { type: 'attribute' },
-				"placeholder": { type: 'attribute' },
-				"alwaysShowChips": { type: 'attribute' }
+				"placeholder": { type: 'attribute' }
 			},
+			
+			/**
+			 * Whether the value was internally changed (to exclude it from being processed by the observer).
+			 */
+			_valueInternallyChanged: false,
 			
 			// Private methods: 
 			
@@ -202,6 +209,10 @@
 					return label;
 				};
 				
+				/**
+				 * Override cbn-select's selection callback to display the address using simple names + re-query the 
+				 * server after selection.
+				 */
 				select._ui_selectedOptionsChanged = function() {
 					var selectedOptions = [];
 					
@@ -236,14 +247,35 @@
 				 * @return {Array} The items to commit as value.
 				 */
 				select._commitValueCallback = function (items) {
-					if (!items.length) return items;
-					
 					var address = self._segmentsToAddress(items);
-					if (!address) return false; // roll back
+					if (!address) address = null;
+					
+					console.log('addr', address, items);
+					try {
+						self._valueInternallyChanged = true;
+						self.value = ( address ? address : null);
+					} finally {
+						self._valueInternallyChanged = false;
+					}
 					
 					// normalize the address segments
 					return self._addressToSegments(address);
 				};
+			},
+			
+			/**
+			 * Value change observer.
+			 */
+			_valueChanged: function () {
+				if (this._valueInternallyChanged) return;
+				// change select's value
+				var segments = this._addressToSegments(this.value);
+				console.trace('set value', this.value, segments);
+				if (segments) {
+					this._selectedValue = segments;
+				} else {
+					this._selectedValue = [];
+				}
 			},
 			
 			/**
@@ -253,6 +285,7 @@
 			 */
 			_addressToSegments: function(address) {
 				var items = [];
+				if (!address) return items;
 				if (address.nume_judet) {
 					items.push({
 						"nivel": "judet",
