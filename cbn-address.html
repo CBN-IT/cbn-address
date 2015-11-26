@@ -1,5 +1,5 @@
 <!--
-`cbn-address-input` implements a structured addresses select input.
+`cbn-address` implements a EU NUTS-structured address selection input.
 
 @group CBN Elements
 @element cbn-address
@@ -10,7 +10,7 @@
 <link rel="import" href="../cbn-form/lib/include.html" />
 <link rel="import" href="../cbn-select/cbn-select.html" />
 
-<dom-module id="cbn-address-input">
+<dom-module id="cbn-address">
 	<template>
 		
 		<cbn-data-source id="defaultDataSource">
@@ -30,11 +30,11 @@
 
 <script>
 	(function (scope) {
-		scope = window.CbnForm.CbnAdresa = {};
+		scope = window.CbnForm.CbnAddress = {};
 		
 		//noinspection JSUnusedGlobalSymbols
 		scope.Prototype = Polymer({
-			is: 'cbn-address-input',
+			is: 'cbn-address',
 			
 			properties: {
 				
@@ -81,6 +81,19 @@
 				placeholder: {
 					type: String,
 					value: ''
+				},
+				
+				/**
+				 * The desired address rank to select up to.
+				 * 
+				 * E.g.
+				 * - 0: counties;
+				 * - 1: superior localities;
+				 * - 2: inferior localities.
+				 */
+				addressRank: {
+					type: Number,
+					value: 1
 				},
 				
 				/**
@@ -174,18 +187,22 @@
 						search: query,
 						nume_judet: null,
 						cod_judet: null,
-						nume_superior: null
+						nume_superior: null,
+						rank: self.addressRank
 					};
 					if (this.value && this.value.length) {
 						this.value.forEach(function(item) {
-							if (item.nivel == 'judet') {
+							if (self.addressRank && item.rank >= self.addressRank) {
+								return;
+							}
+							if (item.rank == 0) {
 								if (item.siruta) {
 									newQuery.cod_judet = item.siruta;
 								} else {
 									newQuery.nume_judet = item.nume;
 								}
 							}
-							if (item.nivel == 'localitate superioara') {
+							if (item.rank == 1) {
 								newQuery.nume_superior = item.nume;
 							}
 						});
@@ -203,7 +220,7 @@
 					if (item.nume_superior) {
 						label += ', ' + item.nume_superior;
 					}
-					if (item.nivel != 'judet' && item.nume_judet) {
+					if (item.rank != 0 && item.nume_judet) {
 						label += ', ' + item.prescurtare_judet;
 					}
 					return label;
@@ -216,7 +233,7 @@
 				select._ui_selectedOptionsChanged = function() {
 					var selectedOptions = [];
 					
-					this._selectedOptions.forEach(function(selectedOpt, i) {
+					this._selectedOptions.forEach(function(selectedOpt) {
 						// clone the object
 						selectedOpt = JSON.parse(JSON.stringify(selectedOpt));
 						selectedOpt.highlighted = !!selectedOpt.highlighted;
@@ -226,7 +243,7 @@
 					}, this);
 					if (this._selectedOptions.length) {
 						var lastItem = this._selectedOptions[this._selectedOptions.length-1].item;
-						if (lastItem.nivel == 'localitate inferioara') {
+						if (lastItem.rank == self.addressRank) {
 							this._closeDropdown();
 						}
 					}
@@ -250,7 +267,6 @@
 					var address = self._segmentsToAddress(items);
 					if (!address) address = null;
 					
-					console.log('addr', address, items);
 					try {
 						self._valueInternallyChanged = true;
 						self.value = ( address ? address : null);
@@ -270,7 +286,6 @@
 				if (this._valueInternallyChanged) return;
 				// change select's value
 				var segments = this._addressToSegments(this.value);
-				console.trace('set value', this.value, segments);
 				if (segments) {
 					this._selectedValue = segments;
 				} else {
@@ -288,7 +303,7 @@
 				if (!address) return items;
 				if (address.nume_judet) {
 					items.push({
-						"nivel": "judet",
+						"rank": 0,
 						"nume": address.nume_judet,
 						"nume_judet": address.nume_judet,
 						"prescurtare_judet": address.prescurtare_judet
@@ -296,14 +311,14 @@
 				}
 				if (address.nume_superior) {
 					items.push({
-						"nivel": "localitate superioara",
+						"rank": 1,
 						"nume": address.nume_superior,
 						"nume_judet": address.nume_judet
 					});
 				}
 				if (address.nume_localitate) {
 					items.push({
-						"nivel": "localitate inferioara",
+						"rank": 2,
 						"nume": address.nume_localitate,
 						"nume_superior": address.nume_superior,
 						"nume_judet": address.nume_judet
@@ -322,10 +337,10 @@
 				var lastItem = items[items.length-1];
 				if (typeof lastItem != 'object') return false;
 				var address = {};
-				if (lastItem.nivel == 'judet') {
+				if (lastItem.rank == 0) {
 					address.nume_judet = lastItem.nume_judet;
 					address.prescurtare_judet = lastItem.prescurtare_judet;
-				} else if (lastItem.nivel == 'localitate superioara') {
+				} else if (lastItem.rank == 1) {
 					address.nume_judet = lastItem.nume_judet;
 					address.nume_superior = lastItem.nume;
 				} else {
@@ -338,7 +353,7 @@
 			
 		});
 		
-		CbnForm.registerElement('cbn-address-input', {
+		CbnForm.registerElement('cbn-address', {
 			types: [ 'address' ],
 			priority: 1
 		});

@@ -7,7 +7,9 @@ import ro.cbn.it.adrese.core.IController;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @UrlPattern("/get/Adrese")
@@ -29,6 +31,13 @@ public class GetAdrese extends IController {
 		String superior = req.getParameter("nume_superior");
 		String prettyPrint = req.getParameter("prettyPrint");
 		String maxCountS = req.getParameter("maxCount");
+		String filterRankStr = req.getParameter("rank");
+		
+		Integer filterRank = null;
+		if (filterRankStr != null && !filterRankStr.isEmpty()) {
+			filterRank = Integer.parseInt(filterRankStr);
+		}
+		
 		int maxCount = 100;
 		try {
 			maxCount = Integer.parseInt(maxCountS, 10);
@@ -48,12 +57,20 @@ public class GetAdrese extends IController {
 			if (cod_judet == null || cod_judet.isEmpty() || cod_judet.equals(oras.get("judet"))) {
 				if (prescurtare_judet == null || prescurtare_judet.isEmpty() || prescurtare_judet.equalsIgnoreCase(oras.get("prescurtare_judet"))) {
 					if (pJudet == null || pJudet.matcher(oras.get("nume_judet")).find()) {
-						if (superior == null || superior.isEmpty() || superior.equals(oras.get("nume_superior"))) {
-							if (pSearch == null || pSearch.matcher(nume).find()) {
-								response.add(oras);
-								maxCount--;
-								if (maxCount == 0) {
-									break;
+						String locRankStr = oras.get("rank");
+						Integer locRank = 0;
+						if (locRankStr != null && !locRankStr.isEmpty()) {
+							locRank = Integer.parseInt(locRankStr);
+						}
+						
+						if (filterRank == null || locRank == null || (locRank <= filterRank)) {
+							if (superior == null || superior.isEmpty() || superior.equals(oras.get("nume_superior"))) {
+								if (pSearch == null || pSearch.matcher(nume).find()) {
+									response.add(oras);
+									maxCount--;
+									if (maxCount == 0) {
+										break;
+									}
 								}
 							}
 						}

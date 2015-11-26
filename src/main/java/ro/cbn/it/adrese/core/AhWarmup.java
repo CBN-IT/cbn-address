@@ -19,7 +19,6 @@ import java.util.LinkedHashMap;
 @UrlPattern("/_ah/warmup")
 public class AhWarmup extends HttpServlet {
 	
-	
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		readFromFile();
@@ -52,6 +51,7 @@ public class AhWarmup extends HttpServlet {
 				}
 				if(oras.get("tip").equals("40")){
 					oras.put("nivel","judet");
+					oras.put("rank", "0");
 					continue;
 				}
 				for (LinkedHashMap<String, String> oras2 : GetAdrese.json) {
@@ -59,8 +59,10 @@ public class AhWarmup extends HttpServlet {
 						oras.put("nume_superior", oras2.get("nume"));
 						if(oras2.get("nivel").equals("judet")){
 							oras.put("nivel","localitate superioara");
+							oras.put("rank", "1");
 						}else if(oras2.get("nivel").equals("localitate superioara")){
 							oras.put("nivel","localitate inferioara");
+							oras.put("rank", "2");
 						}
 						break;
 					}

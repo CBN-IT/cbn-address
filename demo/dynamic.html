@@ -2,7 +2,7 @@
 <html>
 <head lang="en">
 	<meta charset="UTF-8">
-	<title>Select inputs inside cbn-dynamic-form</title>
+	<title>Address inputs inside cbn-dynamic-form</title>
 	
 	<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 	
@@ -17,7 +17,7 @@
 <body>
 
 <div  style="width: 500px; margin: 50px auto;">
-	<h1>Dynamic select inputs, advanced demo</h1>
+	<h1>Dynamic address inputs, advanced demo</h1>
 	
 	<template is="dom-bind">
 		
@@ -27,18 +27,6 @@
 			
 			<cbn-dynamic-form config="{{formConfig}}">
 			</cbn-dynamic-form>
-			
-			<cbn-data-source id="simpleData" data='[
-				{ "value":"1", "label": "First" },
-				{ "value":"2", "label": "Second" },
-				{ "value":"3", "label": "Third" },
-				{ "value":"5", "label": "Third With hash", "_hash":"hash" },
-				{ "value":"4", "label": "Four" }
-			]'></cbn-data-source>
-			
-			<cbn-data-source id="ajaxData">
-				<iron-ajax url="data.json" handle-as="json"></iron-ajax>
-			</cbn-data-source>
 			
 		</form>
 		
@@ -57,8 +45,6 @@
 		
 		function updateOutput(event) {
 			/** @namespace tpl.$.stringifiedJson */
-			if (event)
-				console.trace('val set', event.target.name, event.target.value, event.detail);
 			tpl.$.stringifiedJson.textContent = JSON.stringify(form.model, null, 4);
 		}
 		
