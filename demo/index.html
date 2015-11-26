@@ -2,7 +2,7 @@
 <html>
 <head lang="en">
 	<meta charset="UTF-8">
-	<title>Cbn-Select Demo</title>
+	<title>Cbn-Address Demo</title>
 	
 	<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 	
@@ -10,6 +10,7 @@
 	
 	<link rel="import" href="../../cbn-form/cbn-form.html">
 	<link rel="import" href="../cbn-address.html" />
+	<link rel="import" href="../cbn-paper-address.html">
 	
 	<style>
 		body {
@@ -29,14 +30,14 @@
 <body>
 
 <div style="margin: 20px auto; width: 500px;">
-	<h1>Cbn-Select Demo</h1>
+	<h1>Cbn-Address Demo</h1>
 	
 	<template is="dom-bind">
 		
 		<form id="demoForm" is="cbn-form" model>
 			
-			<cbn-address label="Address Input" name="addr1" 
-							   url="http://localhost:8888/get/Adrese"></cbn-address>
+			<cbn-paper-address label="Address Input" name="addr1" 
+							   url="http://localhost:8888/get/Adrese"></cbn-paper-address>
 			
 		</form>
 		

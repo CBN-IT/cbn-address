@@ -1,0 +1,168 @@
+<!--
+`<cbn-paper-address>` is a paper-styled variant of `<cbn-address>`.
+
+Usage:
+    <cbn-paper-address label="Address" name="addr"></cbn-paper-address>
+
+See `Polymer.PaperInputBehavior` and `<cbn-address>` for API docs.
+
+### Styling
+
+See `Polymer.PaperInputContainer` for a list of custom properties used to
+style this element.
+
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-input/paper-input-behavior.html">
+<link rel="import" href="../paper-input/paper-input-container.html">
+<link rel="import" href="../paper-input/paper-input-error.html">
+<link rel="import" href="cbn-address.html">
+
+<dom-module id="cbn-paper-address">
+	<template>
+		<style>
+			:host {
+				display: block;
+			}
+		</style>
+		
+		<paper-input-container id="container" no-label-float$="[[noLabelFloat]]" attr-for-value="value"
+							   always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]"
+							   auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
+			
+			<label hidden$="[[!label]]">[[label]]</label>
+			
+			<cbn-address name$="[[name]]" id="input" class="paper-input-input"
+						 value="{{value}}" 
+						 default-value="[[defaultValue]]"
+						 url="[[url]]" address-rank="[[addressRank]]"
+						 use-iron-list="[[useIronList]]"
+						 data-source="[[dataSource]]"
+						 placeholder$="[[placeholder]]"
+						 validation="[[validation]]"
+						 validation-order="[[validationOrder]]"
+						 validation-type="[[validationType]]"
+						 default-validation-message="[[defaultValidationMessage]]"
+				></cbn-address>
+			
+			<template is="dom-if" if="[[errorMessage]]">
+				<paper-input-error>[[errorMessage]]</paper-input-error>
+			</template>
+		
+		</paper-input-container>
+	
+	</template>
+</dom-module>
+
+<script>
+	Polymer({
+		is: 'cbn-paper-address',
+		
+		properties: {
+			
+			/**
+			 * The URL to the address provider servlet.
+			 */
+			url: {
+				type: String,
+				value: ''
+			},
+			
+			/**
+			 * Whether to use iron-list for rendering the dropdown options.
+			 */
+			useIronList: {
+				type: Boolean,
+				value: false
+			},
+			
+			/**
+			 * The selector or reference to a `cbn-data-source` element that supplies the available options.
+			 * Exclusive with {@link #options}.
+			 *
+			 * The element is searched for inside the parent form.
+			 */
+			dataSource: {
+				type: String,
+				value: ''
+			},
+			
+			/**
+			 * The placeholder to show when there is no value entered.
+			 */
+			placeholder: {
+				type: String,
+				value: ''
+			},
+			
+			/**
+			 * The desired address rank to select up to.
+			 *
+			 * E.g.
+			 * - 0: counties;
+			 * - 1: superior localities;
+			 * - 2: inferior localities.
+			 */
+			addressRank: {
+				type: Number,
+				value: 1
+			},
+			
+			_ariaLabelledBy: {
+				type: String
+			},
+			
+			_ariaDescribedBy: {
+				type: String
+			}
+			
+		},
+		
+		behaviors: [
+			Polymer.PaperInputBehavior,
+			CbnForm.PaperContainer,
+			CbnForm.DynamicElement
+		],
+		
+		/**
+		 * Element's dynamic attributes.
+		 */
+		dynamicAttributes: {
+			"url": { type: 'attribute' },
+			"addressRank": { type: 'property' },
+			"useIronList": { type: 'property' },
+			"dataSource": { type: 'property' },
+			"placeholder": { type: 'attribute' }
+		},
+		
+		ready: function() {
+			this.$.container.addEventListener('input', this.$.container._onInput);
+			this.$.container._handleValue = function(inputElement) {
+				var value = this._inputElementValue;
+				var input = this._inputElement;
+				
+				if (input._inputValue) {
+					this._inputHasContent = true;
+				} else if (input.multiple) {
+					this._inputHasContent = !!(value && value.length);
+				} else {
+					this._inputHasContent = !!(value);
+				}
+				
+				this.updateAddons({
+					inputElement: inputElement,
+					value: value,
+					invalid: this.invalid
+				});
+			}
+		}
+		
+	});
+	
+	CbnForm.registerElement('cbn-paper-address', {
+		types: ['address'],
+		priority: 3
+	});
+	
+</script>

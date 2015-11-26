@@ -6,15 +6,17 @@
 		{
 			"name": "addr1",
 			"type": "address",
+			"url": "http://localhost:8888/get/Adrese",
 			"floatingLabel": true,
 			"label": "Full address",
 			"defaultValue": "Two"
 		},
 		{
 			"name": "addr2",
-			"type": "Max rank 1",
+			"type": "address",
+			"url": "http://localhost:8888/get/Adrese",
 			"floatingLabel": true,
-			"label": "show clips",
+			"label": "Max rank 1",
 			"addressRank": 1,
 			"defaultValue": "Two"
 		}

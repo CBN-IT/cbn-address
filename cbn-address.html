@@ -12,6 +12,14 @@
 
 <dom-module id="cbn-address">
 	<template>
+		<style>
+			:host {
+				display: block;
+			}
+			#select {
+				display: block;
+			}
+		</style>
 		
 		<cbn-data-source id="defaultDataSource">
 			<cbn-ajax-provider auto-ajax ajax-parameter="" ajax-interval="200">
@@ -133,11 +141,17 @@
 				CbnForm.Validatable
 			],
 			
+			listeners: {
+				'select.value-changed': '_stopSelectEventPropagation'
+			},
+			
 			/**
 			 * Element's dynamic attributes.
 			 */
 			dynamicAttributes: {
-				"freeText": { type: 'attribute' },
+				"url": { type: 'attribute' },
+				"addressRank": { type: 'property' },
+				"useIronList": { type: 'property' },
 				"dataSource": { type: 'property' },
 				"placeholder": { type: 'attribute' }
 			},
@@ -277,6 +291,13 @@
 					// normalize the address segments
 					return self._addressToSegments(address);
 				};
+			},
+			
+			/**
+			 * Stops the propagation of inner cbn-select's events.
+			 */
+			_stopSelectEventPropagation: function(event) {
+				event.stopPropagation();
 			},
 			
 			/**
