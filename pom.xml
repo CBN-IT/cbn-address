@@ -60,6 +60,26 @@
         <!-- for hot reload of the web application-->
 		<outputDirectory>${webappDirectory}/WEB-INF/classes</outputDirectory>
         <plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.4.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<phase>compile</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<mainClass>ro.cbn.it.adrese.convert.GenerateSiruta</mainClass>
+					<arguments>
+						<argument>${project.basedir}/src/main/webapp/siruta</argument>
+						<argument>${project.build.directory}/${project.build.finalName}/siruta/processed.json</argument>
+					</arguments>
+				</configuration>
+			</plugin>
             <plugin>
                 <groupId>ro.appengine</groupId>
                 <artifactId>web-generator-maven-plugin</artifactId>

@@ -14,13 +14,23 @@ import java.util.regex.Pattern;
 
 @UrlPattern("/get/Adrese")
 public class GetAdrese extends IController {
-	public static ArrayList<LinkedHashMap<String, String>> json;
+	
 	private static final int ABSOLUTE_MAX = 2000;
+	
+	public static ArrayList<LinkedHashMap<String, String>> json;
 
 	@Override
 	public void execute() throws Exception {
 		// set CORS headers
-		this.resp.addHeader("Access-Control-Allow-Origin", "*");
+		String origin = this.req.getHeader("Origin");
+		if (origin != null && !origin.isEmpty()) {
+			this.resp.setHeader("Access-Control-Allow-Origin", origin);
+		}
+		
+		if ("OPTIONS".equalsIgnoreCase(this.req.getMethod())) {
+			this.resp.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+			return;
+		}
 		
 		ArrayList<LinkedHashMap<String, String>> response = new ArrayList<>();
 		long start = System.nanoTime();
