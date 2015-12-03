@@ -30,7 +30,7 @@
 		<cbn-select id="select" value="{{ _selectedValue }}" multiple free-text
 					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
 					use-iron-list="[[useIronList]]"
-					no-item-hash-property="siruta"
+					no-item-hash-property="siruta" filter-mode=""
 		></cbn-select>
 		
 	</template>
@@ -247,6 +247,9 @@
 				select._ui_selectedOptionsChanged = function() {
 					var selectedOptions = [];
 					
+					// reset validation status
+					this._setInputValidState(true);
+					
 					this._selectedOptions.forEach(function(selectedOpt) {
 						// clone the object
 						selectedOpt = JSON.parse(JSON.stringify(selectedOpt));
@@ -278,6 +281,10 @@
 				 * @return {Array} The items to commit as value.
 				 */
 				select._commitValueCallback = function (items) {
+					if (items.length && (typeof items[0] == 'string')) {
+						return null; // disallow free text
+					}
+					
 					var address = self._segmentsToAddress(items);
 					if (!address) address = null;
 					
