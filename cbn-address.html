@@ -230,12 +230,15 @@
 				select._getItemLabel = function(item) {
 					if (!item || typeof item != 'object') return item;
 					
-					var label = item.nume;
-					if (item.nume_superior) {
-						label += ', ' + item.nume_superior;
+					var label = '';
+					if (item.nume) {
+						label = item.nume;
 					}
+					/*if (item.nume_superior) {
+						label += (label ? ', ' : '') + item.nume_superior;
+					}*/
 					if (item.rank != 0 && item.nume_judet) {
-						label += ', ' + item.prescurtare_judet;
+						label += (label ? ', ' : '') + item.prescurtare_judet;
 					}
 					return label;
 				};
