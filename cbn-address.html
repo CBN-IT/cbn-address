@@ -30,6 +30,8 @@
 		<cbn-select id="select" value="{{ _selectedValue }}" multiple free-text
 					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
 					use-iron-list="[[useIronList]]"
+					on-cbn-form-register="_stopSelectEventPropagation"
+					on-cbn-form-validate="_handleSelectValidation"
 					no-item-hash-property="siruta" filter-mode=""
 		></cbn-select>
 		
@@ -161,6 +163,11 @@
 			 */
 			_valueInternallyChanged: false,
 			
+			/**
+			 * Whether the inner select input is currently validating.
+			 */
+			_selectInternallyValidating: false,
+			
 			// Private methods: 
 			
 			ready: function() {
@@ -251,7 +258,7 @@
 					var selectedOptions = [];
 					
 					// reset validation status
-					this._setInputValidState(true);
+					this._setInternalValidationState(true);
 					
 					this._selectedOptions.forEach(function(selectedOpt) {
 						// clone the object
@@ -308,6 +315,16 @@
 			 */
 			_stopSelectEventPropagation: function(event) {
 				event.stopPropagation();
+			},
+			
+			/**
+			 * Handles the select's validation event.
+			 */
+			_handleSelectValidation: function(event) {
+				event.stopPropagation();
+				if (event.detail.indirect) {
+					this._setInternalValidationState(event.detail.result);
+				}
 			},
 			
 			/**

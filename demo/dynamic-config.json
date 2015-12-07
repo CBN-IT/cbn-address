@@ -8,16 +8,46 @@
 			"type": "address",
 			"url": "http://localhost:8888/get/Adrese",
 			"floatingLabel": true,
-			"label": "Full address",
-			"defaultValue": "Two"
+			"label": "Full address (local)",
+			"validation": {
+				"required": true
+			},
+			"autoValidate": true
 		},
 		{
 			"name": "addr2",
 			"type": "address",
 			"url": "http://localhost:8888/get/Adrese",
 			"floatingLabel": true,
-			"label": "Max rank 1",
+			"label": "Max rank 1 (local)",
 			"addressRank": 1,
+			"validation": {
+				"required": true
+			},
+			"autoValidate": true
+		},
+		
+		{
+			"name": "raddr1",
+			"type": "address",
+			"floatingLabel": true,
+			"label": "Full address (remote)",
+			"validation": {
+				"required": true
+			},
+			"autoValidate": true,
+			"defaultValue": "Two"
+		},
+		{
+			"name": "raddr2",
+			"type": "address",
+			"floatingLabel": true,
+			"label": "Max rank 1 (remote)",
+			"addressRank": 1,
+			"validation": {
+				"required": true
+			},
+			"autoValidate": true,
 			"defaultValue": "Two"
 		}
 	]

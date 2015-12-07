@@ -36,7 +36,9 @@
 		
 		<form id="demoForm" is="cbn-form" model>
 			
-			<cbn-paper-address label="Address Input" name="addr1"></cbn-paper-address>
+			<cbn-paper-address label="Address Input (no validation)" name="addr1"></cbn-paper-address>
+			
+			<cbn-paper-address label="Address Input (with validation)" name="addr2" auto-validate validation='{ "required": true }'></cbn-paper-address>
 			
 		</form>
 		
