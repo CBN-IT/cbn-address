@@ -288,9 +288,10 @@
 				 * Normalize the selected address segments.
 				 * 
 				 * @param {Array} items The selected items.
+				 * @param {Boolean|Object} [indirect] The indirect notification object to use.
 				 * @return {Array} The items to commit as value.
 				 */
-				select._commitValueCallback = function (items) {
+				select._commitValueCallback = function (items, indirect) {
 					if (items.length && (typeof items[0] == 'string')) {
 						return null; // disallow free text
 					}
@@ -300,7 +301,12 @@
 					
 					try {
 						self._valueInternallyChanged = true;
-						self.value = ( address ? address : null);
+						if (indirect) {
+							self._setIndirectValue(address, (indirect === true ? null : indirect));
+						} else {
+							self.value = address;
+						}
+						
 					} finally {
 						self._valueInternallyChanged = false;
 					}

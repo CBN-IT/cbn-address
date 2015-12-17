@@ -55,7 +55,9 @@
 		/** @namespace tpl.$.demoForm */
 		var form = tpl.$.demoForm;
 		
-		function updateOutput() {
+		function updateOutput(ev) {
+			if (ev)
+				console.log(ev.detail);
 			/** @namespace tpl.$.stringifiedJson */
 			tpl.$.stringifiedJson.textContent = JSON.stringify(form.model, null, 4);
 		}
