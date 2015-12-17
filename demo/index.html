@@ -57,7 +57,7 @@
 		
 		function updateOutput(ev) {
 			if (ev)
-				console.log(ev.detail);
+				console.trace('value changed', ev.target.name, ev.detail);
 			/** @namespace tpl.$.stringifiedJson */
 			tpl.$.stringifiedJson.textContent = JSON.stringify(form.model, null, 4);
 		}

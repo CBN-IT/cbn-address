@@ -278,10 +278,8 @@
 					// set the displayed item selection
 					this._displaySelectedOptions = selectedOptions;
 					
-					this.debounce('_selectedOptionsChanged', function() {
-						this._queryOptions(this._currentFilterValue);
-						this._updateInputValue();
-					});
+					this._queryOptions(this._currentFilterValue);
+					this._updateInputValue();
 				};
 				
 				/**
@@ -301,10 +299,15 @@
 					
 					try {
 						self._valueInternallyChanged = true;
-						if (indirect) {
-							self._setIndirectValue(address, (indirect === true ? null : indirect));
+						
+						if (this._inputValueIndirectlyChanged) {
+							// let the parent _setIndirectValue to emit the notification
+							self._setIndirectValue(address, false);
+						} else if (indirect) {
+							self._setIndirectValue(address, ( indirect === true ? null : indirect ));
 						} else {
 							self.value = address;
+							self.fire('value-changed', { value: address });
 						}
 						
 					} finally {
@@ -334,16 +337,26 @@
 			},
 			
 			/**
-			 * Value change observer.
+			 * Override FormElement behavior's value observer to prevent firing multiple 'value-changed' events.
+			 */
+			_fe_valueChanged: function() { /* nothing here */ },
+			
+			/**
+			 * Value observer.
 			 */
 			_valueChanged: function () {
 				if (this._valueInternallyChanged) return;
-				// change select's value
+				
+				// change select's value, which will also change this.value
 				var segments = this._addressToSegments(this.value);
+				var selectVal = [];
 				if (segments) {
-					this._selectedValue = segments;
+					selectVal = segments;
+				}
+				if (this._inputValueIndirectlyChanged) {
+					this.$.select._setIndirectValue(selectVal);
 				} else {
-					this._selectedValue = [];
+					this.$.select.value = selectVal;
 				}
 			},
 			
