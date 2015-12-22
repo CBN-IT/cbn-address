@@ -25,6 +25,10 @@ style this element.
 			:host {
 				display: block;
 			}
+			paper-input-container{
+				overflow: hidden;
+				/*this is to prevent the scrollbar to appear when the label is animating*/
+			}
 		</style>
 		
 		<paper-input-container id="container" no-label-float$="[[noLabelFloat]]" attr-for-value="validate-value"
