@@ -277,8 +277,9 @@
 					
 					// set the displayed item selection
 					this._displaySelectedOptions = selectedOptions;
-					
-					this._queryOptions(this._currentFilterValue);
+					if (this._status.open) {
+						this._queryOptions(this._currentFilterValue);
+					}
 					this._updateInputValue();
 				};
 				
