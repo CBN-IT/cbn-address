@@ -268,17 +268,19 @@
 						selectedOpt.label = selectedOpt.item.nume;
 						selectedOptions.push(selectedOpt);
 					}, this);
-					if (this._selectedOptions.length) {
-						var lastItem = this._selectedOptions[this._selectedOptions.length-1].item;
-						if (lastItem.rank == self.addressRank) {
-							this._closeDropdown();
+					
+					if (!this._currentTransactionIndirect) {
+						if (this._selectedOptions.length) {
+							var lastItem = this._selectedOptions[this._selectedOptions.length - 1].item;
+							if (lastItem.rank == self.addressRank) {
+								this._closeDropdown();
+							}
 						}
+						this._queryOptions(this._currentFilterValue);
 					}
 					
 					// set the displayed item selection
 					this._displaySelectedOptions = selectedOptions;
-					
-					this._queryOptions(this._currentFilterValue);
 					this._updateInputValue();
 				};
 				
