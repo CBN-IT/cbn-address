@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>ro.cbnit</groupId>
-    <artifactId>cbn-address-server</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>ro.cbn.it</groupId>
+    <artifactId>address</artifactId>
+    <version>1.0.0</version>
 	<packaging>war</packaging>
     <prerequisites>
         <maven>3.1.0</maven>
@@ -35,12 +35,12 @@
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
     </properties>
     <dependencies>
-        <dependency>
-            <!--our framework-->
-            <groupId>ro.appengine</groupId>
-            <artifactId>web-framework</artifactId>
-            <version>0.7</version>
-        </dependency>
+		<dependency>
+			<!--our framework-->
+			<groupId>ro.cbn.it</groupId>
+			<artifactId>appengine-framework</artifactId>
+			<version>[1.0.0,]</version>
+		</dependency>
         <!-- Compile/runtime dependencies -->
         <dependency>
             <groupId>com.google.appengine</groupId>
@@ -53,7 +53,6 @@
             <version>2.5</version>
             <scope>provided</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -80,30 +79,32 @@
 					</arguments>
 				</configuration>
 			</plugin>
-            <plugin>
-                <groupId>ro.appengine</groupId>
-                <artifactId>web-generator-maven-plugin</artifactId>
-                <version>0.6</version>
-                <executions>
-                    <execution>
-                        <id>create_mappings</id>
-                        <goals>
-                            <goal>web_mapping</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                    <execution>
-                        <id>increment</id>
-                        <goals>
-                            <goal>increment_version</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <suffix>${user.name}</suffix>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+			<plugin>
+				<groupId>ro.appengine</groupId>
+				<artifactId>web-generator-maven-plugin</artifactId>
+				<version>1.0.0</version>
+				<executions>
+					<execution>
+						<id>create_mappings</id>
+						<goals>
+							<goal>web_mapping</goal>
+						</goals>
+						<phase>package</phase>
+					</execution>
+					<execution>
+						<id>increment</id>
+						<goals>
+							<goal>increment_version</goal>
+						</goals>
+						<phase>package</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<extendedClass>ro.cbn.it.framework.servlet.AbstractIController</extendedClass>
+					<annotationClass>ro.cbn.it.framework.annotation.UrlPattern</annotationClass>
+					<suffix>${user.name}</suffix>
+				</configuration>
+			</plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <version>3.1</version>
@@ -152,5 +153,26 @@
             </plugin>
         </plugins>
     </build>
-
+	<pluginRepositories>
+		<pluginRepository>
+			<id>cbn-mvn</id>
+			<name>>cbn-it</name>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<url>https://api.bitbucket.org/1.0/repositories/cbn-it/mvn-repo/raw/releases</url>
+		</pluginRepository>
+	</pluginRepositories>
+	<repositories>
+		<repository>
+			<id>cbn-mvn</id>
+			<name>>cbn-it</name>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<url>https://api.bitbucket.org/1.0/repositories/cbn-it/mvn-repo/raw/releases</url>
+		</repository>
+	</repositories>
 </project>

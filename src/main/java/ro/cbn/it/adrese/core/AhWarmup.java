@@ -1,11 +1,11 @@
 package ro.cbn.it.adrese.core;
 
 import com.google.gson.reflect.TypeToken;
-import ro.appenigne.web.framework.annotation.UrlPattern;
-import ro.appenigne.web.framework.utils.GsonUtils;
-import ro.appenigne.web.framework.utils.Log;
 import ro.cbn.it.adrese.get.GetAdrese;
 import ro.cbn.it.adrese.utils.FileUtils;
+import ro.cbn.it.framework.annotation.UrlPattern;
+import ro.cbn.it.framework.utils.GsonUtils;
+import ro.cbn.it.framework.utils.Log;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

@@ -1,7 +1,8 @@
 package ro.cbn.it.adrese.utils;
 
-import ro.appenigne.web.framework.annotation.UrlPattern;
-import ro.appenigne.web.framework.utils.Log;
+
+import ro.cbn.it.framework.annotation.UrlPattern;
+import ro.cbn.it.framework.utils.Log;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
