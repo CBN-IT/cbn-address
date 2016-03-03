@@ -1,8 +1,8 @@
 package ro.cbn.it.adrese.convert;
 
 import com.google.gson.reflect.TypeToken;
-import ro.appenigne.web.framework.utils.GsonUtils;
 import ro.cbn.it.adrese.utils.FileUtils;
+import ro.cbn.it.framework.utils.GsonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
