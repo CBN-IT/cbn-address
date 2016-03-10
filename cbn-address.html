@@ -32,6 +32,7 @@
 					use-iron-list="[[useIronList]]"
 					on-cbn-form-register="_stopSelectEventPropagation"
 					on-cbn-form-validate="_handleSelectValidation"
+					focusable-ancestor="[[focusableAncestor]]"
 					no-item-hash-property="siruta" filter-mode=""
 		></cbn-select>
 		
@@ -118,6 +119,14 @@
 							{ param: 'loc_inf' }
 						];
 					}
+				},
+				
+				/**
+				 * Override cbn-select's focusable ancestor.
+				 */
+				focusableAncestor: {
+					type: String,
+					value: 'cbn-address'
 				},
 				
 				/**
