@@ -3,6 +3,7 @@ package ro.cbn.it.adrese.convert;
 import com.google.gson.reflect.TypeToken;
 import ro.cbn.it.adrese.utils.FileUtils;
 import ro.cbn.it.framework.utils.GsonUtils;
+import ro.cbn.it.framework.utils.StringUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -17,8 +18,9 @@ public class GenerateSiruta {
 	public static int main(String[] args) {
 		long start = System.nanoTime();
 		try {
-			if (args.length != 2) {
+			if (args.length < 3) {
 				System.err.println("Error: no input/destination files given!");
+				return 1;
 			}
 			
 			String orase = FileUtils.getFromFile(args[0] + "/siruta_parsat.json");
@@ -42,6 +44,21 @@ public class GenerateSiruta {
 					oras.put("rank", "0");
 					continue;
 				}
+				
+				if (oras.get("tip").equals("6")) {
+					oras.put("nume", oras.get("nume").replace("BUCUREȘTI ", ""));
+					oras.put("nume", oras.get("nume").replace("SECTORUL", "SECTOR"));
+				}
+				if (oras.get("tip").equals("3")) {
+					oras.put("nume", "Comuna " + oras.get("nume"));
+				}
+				if (oras.get("tip").equals("22") ||
+					oras.get("tip").equals("23") ||
+					oras.get("tip").equals("11") ||
+					oras.get("tip").equals("19")) {
+					
+					oras.put("nume", "Sat " + oras.get("nume"));
+				}
 				for (LinkedHashMap<String, String> oras2 : json) {
 					if(oras.get("superior").equals(oras2.get("siruta"))){
 						oras.put("nume_superior", oras2.get("nume"));
@@ -56,6 +73,30 @@ public class GenerateSiruta {
 					}
 				}
 			}
+			for (LinkedHashMap<String, String> oras : json) {
+				if (oras.get("nume") != null) {
+					oras.put("nume", StringUtils.capitalizeWords(oras.get("nume")));
+				}
+				if (oras.get("nume_judet") != null) {
+					oras.put("nume_judet", StringUtils.capitalizeWords(oras.get("nume_judet")));
+				}
+				if (oras.get("nume_superior") != null) {
+					oras.put("nume_superior", StringUtils.capitalizeWords(oras.get("nume_superior")));
+				}
+			}
+			PrintWriter printerCsv = new PrintWriter(args[2]);
+			for (LinkedHashMap<String, String> oras : json) {
+				if("2".equals(oras.get("rank"))){
+					if (oras.get("prescurtare_judet").contains(",") ||
+						oras.get("nume_superior").contains(",") ||
+						oras.get("nume").contains(",")) {
+						System.out.println("warning:" + oras.get("prescurtare_judet") + oras.get("nume_superior") + oras.get("nume"));
+					}
+					printerCsv.println(oras.get("prescurtare_judet")+","+oras.get("nume_superior")+","+oras.get("nume"));
+				}
+			}
+			printerCsv.close();
+			
 			
 			String result = GsonUtils.getGsonPrettyPrint().toJson(json);
 			PrintWriter printer = new PrintWriter(args[1]);

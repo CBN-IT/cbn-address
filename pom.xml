@@ -76,6 +76,7 @@
 					<arguments>
 						<argument>${project.basedir}/src/main/webapp/siruta</argument>
 						<argument>${project.build.directory}/${project.build.finalName}/siruta/processed.json</argument>
+						<argument>${project.build.directory}/${project.build.finalName}/siruta/csv.csv</argument>
 					</arguments>
 				</configuration>
 			</plugin>
