@@ -18,6 +18,9 @@
 			}
 			#select {
 				display: block;
+				--cbn-select-opts-list:{
+					white-space: nowrap;
+				}
 			}
 		</style>
 		
@@ -245,16 +248,15 @@
 				 */
 				select._getItemLabel = function(item) {
 					if (!item || typeof item != 'object') return item;
-					
 					var label = '';
 					if (item.nume) {
 						label = item.nume;
 					}
-					/*if (item.nume_superior) {
-						label += (label ? ', ' : '') + item.nume_superior;
-					}*/
+					if (item.rank == 2 && item.nume_superior) {
+						label = item.nume_superior + (label ? ', ' : '') + label;
+					}
 					if (item.rank != 0 && item.nume_judet) {
-						label += (label ? ', ' : '') + item.prescurtare_judet;
+						label = item.prescurtare_judet + (label ? ', ' : '') + label;
 					}
 					return label;
 				};
@@ -274,7 +276,11 @@
 						selectedOpt = JSON.parse(JSON.stringify(selectedOpt));
 						selectedOpt.highlighted = !!selectedOpt.highlighted;
 						selectedOpt.editing = !!selectedOpt.editing;
-						selectedOpt.label = selectedOpt.item.nume;
+						if (selectedOpt.item.rank == "0") {
+							selectedOpt.label = selectedOpt.item.prescurtare_judet;
+						} else {
+							selectedOpt.label = selectedOpt.item.nume;
+						}
 						selectedOptions.push(selectedOpt);
 					}, this);
 					
@@ -391,7 +397,8 @@
 					items.push({
 						"rank": 1,
 						"nume": address.nume_superior,
-						"nume_judet": address.nume_judet
+						"nume_judet": address.nume_judet,
+						"prescurtare_judet": address.prescurtare_judet
 					});
 				}
 				if (address.nume_localitate) {
@@ -399,7 +406,8 @@
 						"rank": 2,
 						"nume": address.nume_localitate,
 						"nume_superior": address.nume_superior,
-						"nume_judet": address.nume_judet
+						"nume_judet": address.nume_judet,
+						"prescurtare_judet": address.prescurtare_judet
 					});
 				}
 				return items;
@@ -412,6 +420,7 @@
 			 * @return {Object|Boolean} The resulting address object, false if invalid.
 			 */
 			_segmentsToAddress: function(items) {
+				console.log(items);
 				var lastItem = items[items.length-1];
 				if (typeof lastItem != 'object') return false;
 				var address = {};
@@ -421,10 +430,12 @@
 				} else if (lastItem.rank == 1) {
 					address.nume_judet = lastItem.nume_judet;
 					address.nume_superior = lastItem.nume;
+					address.prescurtare_judet = lastItem.prescurtare_judet;
 				} else {
 					address.nume_judet = lastItem.nume_judet;
 					address.nume_superior = lastItem.nume_superior;
 					address.nume_localitate = lastItem.nume;
+					address.prescurtare_judet = lastItem.prescurtare_judet;
 				}
 				return address;
 			}
