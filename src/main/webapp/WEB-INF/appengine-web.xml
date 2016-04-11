@@ -10,7 +10,7 @@
         <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
         <property name="appengine.datastore.disableChunkSizeWarning" value="true"/>
         <property name="auth-config" value="WEB-INF/oauth_consumer.properties"/>
-		<property name="appName" value="Cool CRM"/>
+		<property name="appName" value="Address Search Service"/>
     </system-properties>
 
 </appengine-web-app>

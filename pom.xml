@@ -5,17 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ro.cbn.it</groupId>
-    <artifactId>address</artifactId>
+    <artifactId>cbn-address-server</artifactId>
     <version>1.0.0</version>
 	<packaging>war</packaging>
     <prerequisites>
         <maven>3.1.0</maven>
     </prerequisites>
-
+	
     <properties>
         <app.id>cbn-adresa</app.id>
-        <app.module>default</app.module>
-
+        <app.module>siruta-v2</app.module>
+		
         <app.configSettings>
             <![CDATA[-->
 				<instance-class>F1</instance-class>
@@ -25,12 +25,12 @@
 				</automatic-scaling>
 			<!--]]>
         </app.configSettings>
-
+		
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
-
+		
         <plugin.appengine.version>1.9.28</plugin.appengine.version>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
     </properties>
@@ -41,24 +41,57 @@
 			<artifactId>appengine-framework</artifactId>
 			<version>[1.0.0,]</version>
 		</dependency>
+		
         <!-- Compile/runtime dependencies -->
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-1.0-sdk</artifactId>
             <version>${plugin.appengine.version}</version>
         </dependency>
+		
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
             <version>2.5</version>
             <scope>provided</scope>
         </dependency>
-    </dependencies>
+		
+		<dependency>
+			<groupId>com.googlecode.concurrent-trees</groupId>
+			<artifactId>concurrent-trees</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.github.jbellis</groupId>
+			<artifactId>jamm</artifactId>
+			<version>0.3.1</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.esotericsoftware</groupId>
+			<artifactId>kryo</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+		
+	</dependencies>
 
     <build>
         <!-- for hot reload of the web application-->
 		<outputDirectory>${webappDirectory}/WEB-INF/classes</outputDirectory>
         <plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.3</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
@@ -66,18 +99,25 @@
 				<executions>
 					<execution>
 						<goals>
-							<goal>java</goal>
+							<goal>exec</goal>
 						</goals>
 						<phase>package</phase>
 					</execution>
 				</executions>
 				<configuration>
-					<mainClass>ro.cbn.it.adrese.convert.GenerateSiruta</mainClass>
+					<executable>java</executable>
 					<arguments>
-						<argument>${project.basedir}/src/main/webapp/siruta</argument>
-						<argument>${project.build.directory}/${project.build.finalName}/siruta/processed.json</argument>
-						<argument>${project.build.directory}/${project.build.finalName}/siruta/csv.csv</argument>
+						<argument>-classpath</argument>
+						<classpath/>
+						<!--suppress MavenModelInspection (the property is defined by maven-dependency-plugin) -->
+						<argument>-javaagent:${com.github.jbellis:jamm:jar}</argument>
+						<argument>ro.cbn.it.adrese.model.siruta.SirutaGenerator</argument>
+						<argument>${project.basedir}/src/main/webapp/siruta/siruta_parsat.json</argument>
+						<argument>${project.basedir}/src/main/webapp/siruta/judete.json</argument>
+						<argument>${project.build.directory}/${project.build.finalName}/siruta/database</argument>
+						<argument>${project.build.directory}/${project.build.finalName}/siruta/processed.csv</argument>
 					</arguments>
+					<workingDirectory>${project.build.directory}/${project.build.finalName}</workingDirectory>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -146,6 +186,10 @@
                 <version>${plugin.appengine.version}</version>
 
                 <configuration>
+					<!--<jvmFlags>-->
+						<!--<jvmFlag>-Xdebug</jvmFlag>-->
+						<!--<jvmFlag>-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y</jvmFlag>-->
+					<!--</jvmFlags>-->
                     <enableJarClasses>false</enableJarClasses>
                     <!-- Comment in the below snippet to bind to all IPs instead of just localhost -->
                     <!-- address>0.0.0.0</address>-->

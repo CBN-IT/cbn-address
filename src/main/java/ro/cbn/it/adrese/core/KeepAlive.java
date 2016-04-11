@@ -1,4 +1,4 @@
-package ro.cbn.it.adrese.utils;
+package ro.cbn.it.adrese.core;
 
 
 import ro.cbn.it.framework.annotation.UrlPattern;
