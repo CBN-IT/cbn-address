@@ -27,7 +27,7 @@
 			</cbn-dynamic-form>
 			
 		</form>
-		
+		<button on-tap="setCeva">Seteaza ceva</button>
 		<p style="font-weight: bold;">Output: </p>
 		<pre id="stringifiedJson"></pre>
 		
@@ -48,6 +48,13 @@
 		
 		form.addEventListener('value-changed', updateOutput);
 		updateOutput();
+		tpl.setCeva=function(){
+			form.set("model.raddr2",{
+				"judet": "Ialomița",
+				"nume_superior": "Municipiul Slobozia",
+				"nume_localitate": "Slobozia"
+			});
+		}
 	});
 </script>
 
