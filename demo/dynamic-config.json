@@ -6,7 +6,7 @@
 		{
 			"name": "addr1",
 			"type": "address",
-			"url": "http://localhost:8888/get/Adrese",
+			"url": "http://localhost:8888/searchAddress",
 			"floatingLabel": true,
 			"label": "Full address 1 (local)",
 			"addressRank": 1,
@@ -18,7 +18,7 @@
 		{
 			"name": "addr2",
 			"type": "address",
-			"url": "http://localhost:8888/get/Adrese",
+			"url": "http://localhost:8888/searchAddress",
 			"floatingLabel": true,
 			"label": "Max rank 2 (local)",
 			"addressRank": 2,

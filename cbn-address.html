@@ -18,6 +18,7 @@
 			}
 			#select {
 				display: block;
+				
 				--cbn-select-opts-list:{
 					white-space: nowrap;
 				}
@@ -30,13 +31,28 @@
 			</cbn-ajax-provider>
 		</cbn-data-source>
 		
-		<cbn-select id="select" value="{{ _selectedValue }}" multiple free-text
+		<template id="selectedAddressTemplate">
+			<div class$="[[_computeSelectedItemClass(item.highlighted,item.editing)]]"
+					on-tap="_selectedOptionTap">
+				
+				<template is="dom-if" if="[[item.editing]]">
+					<input class="option-editor" type="text" title="Edit value" value="{{_editQuery::input}}"
+						   autocomplete="off" size$="[[_computeEditInputSize(_editQuery)]]">
+				</template>
+				<template is="dom-if" if="[[!item.editing]]"><span>[[item.label]]</span></template>
+				
+				<a class="removeBtn" on-tap="_removeBtnTap">
+					<iron-icon icon="icons:backspace"></iron-icon>
+				</a>
+			</div>
+		</template>
+		
+		<cbn-select id="select" value="{{ _selectedValue }}" always-show-chips free-text
 					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
 					use-iron-list="[[useIronList]]"
 					on-cbn-form-register="_stopSelectEventPropagation"
 					on-cbn-form-validate="_handleSelectValidation"
-					focusable-ancestor="[[focusableAncestor]]"
-					no-item-hash-property="siruta" filter-mode=""
+					focusable-ancestor="[[focusableAncestor]]" filter-mode=""
 		></cbn-select>
 		
 	</template>
@@ -66,7 +82,7 @@
 				 */
 				url: {
 					type: String,
-					value: 'https://cbn-adresa.appspot.com/get/Adrese'
+					value: 'https://siruta-v2-dot-cbn-adresa.appspot.com/searchAddress'
 				},
 				
 				/**
@@ -100,10 +116,7 @@
 				/**
 				 * The desired address rank to select up to.
 				 * 
-				 * E.g.
-				 * - 0: counties;
-				 * - 1: superior localities;
-				 * - 2: inferior localities.
+				 * The index is zero-based (e.g. 0=county, 1=superior locality).
 				 */
 				addressRank: {
 					type: Number,
@@ -112,16 +125,40 @@
 				
 				/**
 				 * Describes the segments of the address.
+				 * 
+				 * Each segment can have any of the following arguments:
+				 * 
+				 * - name: required; the name of the segment, used as value object key;
+				 * - meta: a map (plain object) of additional properties to copy into the value object;
+				 * - showAncestorInChip: whether to show it as chip item (if it is an ancestor );
+				 * - showAncestorInDropdown: display it (if it is an ancestor) in the element's dropdown?;
+				 * - includeInAncestorQuery: includes it into the server query, as ancestor;
 				 */
 				addressSegments: {
 					type: Array,
 					value: function() {
 						return [
-							{ param: 'county' },
-							{ param: 'loc_sup' },
-							{ param: 'loc_inf' }
+							{ rank: 0, name: 'judet', meta: {
+								shortCountyName: 'prescurtare_judet'
+							}, includeInAncestorQuery: true, useMetaForLabel: 'shortCountyName' },
+							{
+								rank: 1, name: 'nume_superior', meta: {
+								shortCountyName: 'prescurtare_judet'
+							}, showAncestorInChip: true, showAncestorInDropdown: true },
+							{
+								rank: 2, name: 'nume_localitate', meta: {
+								shortCountyName: 'prescurtare_judet'
+							} }
 						];
-					}
+					},
+					observer: '_addressSegmentsChanged'
+				},
+				
+				/**
+				 * Stores the processed address segments (with defaults inferred).
+				 */
+				_addressSegments: {
+					type: Array
 				},
 				
 				/**
@@ -141,11 +178,18 @@
 				},
 				
 				/**
-				 * The internal select's value.
+				 * The internal (normalized) address object.
+				 * 
+				 * Uses an `AddressComponent` object with the following keys:
+				 * 
+				 * - `id`: the ID of the address component;
+				 * - `name`: the name of the component;
+				 * - `rank`: the numeric rank;
+				 * - `ancestors`: the component's ancestors (array of other `AddressComponent`s, bottom-up ordering).
 				 */
 				_selectedValue: {
 					type: Array,
-					value: function() { return []; }
+					value: function() { return null; }
 				}
 				
 			},
@@ -179,6 +223,9 @@
 			 * Whether the inner select input is currently validating.
 			 */
 			_selectInternallyValidating: false,
+			
+			/** @namespace this.$.defaultDataSource */
+			
 			
 			// Private methods: 
 			
@@ -217,27 +264,30 @@
 				 */
 				select._processDataSourceQuery = function(query) {
 					var newQuery = {
-						search: query,
-						nume_judet: null,
-						cod_judet: null,
-						nume_superior: null,
-						rank: self.addressRank
+						query: query
+						// ancestor: null,
+						// maxRank: null
 					};
-					if (this.value && this.value.length) {
-						this.value.forEach(function(item) {
-							if (self.addressRank && item.rank >= self.addressRank) {
-								return;
-							}
-							if (item.rank == 0) {
-								if (item.siruta) {
-									newQuery.cod_judet = item.siruta;
-								} else {
-									newQuery.nume_judet = item.nume;
+					if (self.addressRank !== null && self.addressRank !== '') {
+						newQuery.maxRank = self.addressRank;
+					}
+					if (this.value) {
+						var ancestors = [ this.value ];
+						if (this.value.ancestors && this.value.ancestors.length)
+							ancestors = ancestors.concat(this.value.ancestors);
+						ancestors.some(function(ancestor) {
+							var segmentOptions = self._addressSegments[ancestor.rank];
+							if (segmentOptions) {
+								if (segmentOptions.includeInAncestorQuery) {
+									if (ancestor.id) {
+										newQuery.ancestor = ancestor.id;
+									} else {
+										newQuery.ancestor = ancestor.name;
+									}
+									return true; // found it, stop the iteration
 								}
 							}
-							if (item.rank == 1) {
-								newQuery.nume_superior = item.nume;
-							}
+							return false; // continue iterating
 						});
 					}
 					return newQuery;
@@ -248,17 +298,26 @@
 				 */
 				select._getItemLabel = function(item) {
 					if (!item || typeof item != 'object') return item;
-					var label = '';
-					if (item.nume) {
-						label = item.nume;
+					
+					var names = [ item.name ];
+					if (item.ancestors) {
+						item.ancestors.forEach(function(ancestor) {
+							var segmentOptions = self._addressSegments[ancestor.rank];
+							if (segmentOptions) {
+								if (segmentOptions.showAncestorInDropdown) {
+									var name = ancestor.name;
+									if (segmentOptions.useMetaForLabel && ancestor.metaData[segmentOptions.useMetaForLabel]) {
+										name = ancestor.metaData[segmentOptions.useMetaForLabel];
+									}
+									names.splice(0, 0, name);
+								}
+							}
+						});
 					}
-					if (item.rank == 2 && item.nume_superior) {
-						label = item.nume_superior + (label ? ', ' : '') + label;
-					}
-					if (item.rank != 0 && item.nume_judet) {
-						label = item.prescurtare_judet + (label ? ', ' : '') + label;
-					}
-					return label;
+					
+					return names.reduce(function(label, current) {
+						return (label ? label + ", " : "" ) + current;
+					}, '');
 				};
 				
 				/**
@@ -266,41 +325,105 @@
 				 * server after selection.
 				 */
 				select._ui_selectedOptionsChanged = function() {
-					var selectedOptions = [];
-					
 					// reset validation status
-					this._setInternalValidationState(true);
+					this._setInternalValidationState(true, true); // prevent firing un-needed notifications
 					
-					this._selectedOptions.forEach(function(selectedOpt) {
-						// clone the object
-						selectedOpt = JSON.parse(JSON.stringify(selectedOpt));
+					// insert metadata inside the _selectedOptions
+					var selectedItem = null;
+					if (this._selectedOptions.length) {
+						selectedItem = this._selectedOptions[0].item;
+					}
+					
+					var chips = [];
+					if (selectedItem) {
+						var segmentOptions = self._addressSegments[selectedItem.rank];
+						var name = selectedItem.name;
+						if (segmentOptions.useMetaForLabel && selectedItem.metaData[segmentOptions.useMetaForLabel]) {
+							name = selectedItem.metaData[segmentOptions.useMetaForLabel];
+						}
+						chips.push({
+							rank: selectedItem.rank,
+							label: name
+						});
+						if (selectedItem.ancestors) {
+							selectedItem.ancestors.forEach(function(ancestor) {
+								var segmentOptions = self._addressSegments[ancestor.rank];
+								if (segmentOptions) {
+									if (segmentOptions.showAncestorInChip) {
+										var name = ancestor.name;
+										if (segmentOptions.useMetaForLabel && ancestor.metaData[segmentOptions.useMetaForLabel]) {
+											name = ancestor.metaData[segmentOptions.useMetaForLabel];
+										}
+										chips.splice(0, 0, {
+											rank: ancestor.rank,
+											label: name
+										});
+									}
+								}
+							});
+						}
+					}
+					chips.forEach(function(selectedOpt) {
 						selectedOpt.highlighted = !!selectedOpt.highlighted;
 						selectedOpt.editing = !!selectedOpt.editing;
-						if (selectedOpt.item.rank == "0") {
-							selectedOpt.label = selectedOpt.item.prescurtare_judet;
-						} else {
-							selectedOpt.label = selectedOpt.item.nume;
-						}
-						selectedOptions.push(selectedOpt);
-					}, this);
+					});
+					
+					// set the displayed chips
+					this._displaySelectedOptions = chips;
 					
 					if (!this._currentTransactionIndirect) {
-						if (this._selectedOptions.length) {
-							var lastItem = this._selectedOptions[this._selectedOptions.length - 1].item;
-							if (lastItem.rank == self.addressRank) {
+						if (selectedItem) {
+							if (selectedItem.rank == self.addressRank) {
 								this._closeDropdown();
 							}
 						}
-						this._queryOptions(this._currentFilterValue);
 					}
-					
-					// set the displayed item selection
-					this._displaySelectedOptions = selectedOptions;
+					if (!this._currentTransactionIndirect && this.multiple && !this.allowDuplicates && this._status.open) {
+						this._filterOptions(/**@type {String}*/this._currentFilterValue);
+					}
 					this._updateInputValue();
 				};
 				
 				/**
-				 * Normalize the selected address segments.
+				 * Removes the current highlighted address from the selected options list.
+				 */
+				select._removeSelectedOption = function(selectedIdx) {
+					if (selectedIdx === undefined) {
+						selectedIdx = this._highlighted.selectedOptionIdx;
+					}
+					if (selectedIdx < 0)
+						return;
+					if (selectedIdx >= this._displaySelectedOptions.length)
+						return;
+					
+					// this.deselect(this._displaySelectedOptions[this._highlighted.selectedOptionIdx].item);
+					var selectedItem = this._displaySelectedOptions[selectedIdx];
+					if (this.value) {
+						var ancestors = [ this.value ]; // uses rank (top-down) ordering
+						if (this.value.ancestors) {
+							this.value.ancestors.forEach(function(ancestor) {
+								ancestors.splice(0, 0, ancestor);
+							});
+						}
+						if (selectedItem.rank < 1) {
+							this.select(null); // deselect everything
+						} else {
+							var newValue = ancestors[selectedItem.rank - 1];
+							newValue.ancestors = ancestors.slice(0, newValue.rank).reverse();
+							this.select(newValue);
+						}
+						
+					} else {
+						this.select(null);
+					}
+					
+					// try to highlight the next item
+					// (if not possible, the last item will be chosen)
+					this._highlightSelectedItem(selectedIdx);
+				};
+				
+				/**
+				 * Cbn-Select commit callback to normalize the selected items and set the address input's value.
 				 * 
 				 * @param {Array} items The selected items.
 				 * @param {Boolean|Object} [indirect] The indirect notification object to use.
@@ -310,34 +433,38 @@
 					if (items.length && (typeof items[0] == 'string')) {
 						return null; // disallow free text
 					}
-					
-					var address = self._segmentsToAddress(items);
-					if (!address) address = null;
+					var value = self._internalAddressToValue(items[0]);
+					if (!value) value = null;
 					
 					try {
 						self._valueInternallyChanged = true;
 						
 						if (this._inputValueIndirectlyChanged) {
 							// let the parent _setIndirectValue to emit the notification
-							self._setIndirectValue(address, false);
+							self._setIndirectValue(value, false);
 						} else if (indirect) {
-							self._setIndirectValue(address, ( indirect === true ? null : indirect ));
+							self._setIndirectValue(value, ( indirect === true ? null : indirect ));
 						} else {
-							self.value = address;
-							self.fire('value-changed', { value: address });
+							self.value = value;
+							self.fire('value-changed', { value: value });
 						}
 						
 					} finally {
 						self._valueInternallyChanged = false;
 					}
 					
-					// normalize the address segments
-					return self._addressToSegments(address);
+					// normalize the selected items
+					if (!value) {
+						return [];
+					}
+					return [ self._valueToInternalAddress(value) ];
 				};
 			},
 			
 			/**
 			 * Stops the propagation of inner cbn-select's events.
+			 * 
+			 * @param {Object} event The originating event object.
 			 */
 			_stopSelectEventPropagation: function(event) {
 				event.stopPropagation();
@@ -345,11 +472,13 @@
 			
 			/**
 			 * Handles the select's validation event.
+			 * 
+			 * @param {Object} event The originating event object.
 			 */
 			_handleSelectValidation: function(event) {
 				event.stopPropagation();
 				if (event.detail.indirect) {
-					this._setInternalValidationState(event.detail.result);
+					this._setInternalValidationState(event.detail.result, false);
 				}
 			},
 			
@@ -365,79 +494,123 @@
 				if (this._valueInternallyChanged) return;
 				
 				// change select's value, which will also change this.value
-				var segments = this._addressToSegments(this.value);
-				var selectVal = [];
-				if (segments) {
-					selectVal = segments;
-				}
+				var address = this._valueToInternalAddress(this.value);
 				if (this._inputValueIndirectlyChanged) {
-					this.$.select._setIndirectValue(selectVal);
+					this.$.select._setIndirectValue(address);
 				} else {
-					this.$.select.value = selectVal;
+					this.$.select.value = address;
 				}
 			},
 			
 			/**
-			 * Converts an address object to a segment list.
-			 * @param {Object} address The address object.
-			 * @return {Array} The segments of the address.
+			 * Processes the newly-set address segments array, inferring defaults.
+			 * 
+			 * @param {Array} addressSegments The new segments.
 			 */
-			_addressToSegments: function(address) {
-				var items = [];
-				if (!address) return items;
-				if (address.nume_judet) {
-					items.push({
-						"rank": 0,
-						"nume": address.nume_judet,
-						"nume_judet": address.nume_judet,
-						"prescurtare_judet": address.prescurtare_judet
+			_addressSegmentsChanged: function(addressSegments) {
+				var pAddressSegments = [];
+				
+				if (addressSegments)
+					addressSegments.forEach(function(s) {
+						pAddressSegments.push({
+							rank: s.rank,
+							name: s.name,
+							meta: s.meta,
+							showAncestorInChip: (s.showAncestorInChip !== false),
+							showAncestorInDropdown: (s.showAncestorInDropdown !== false),
+							includeInAncestorQuery: !!s.includeInAncestorQuery,
+							useMetaForLabel: s.useMetaForLabel
+						});
 					});
+				
+				this._addressSegments = pAddressSegments;
+			},
+			
+			/**
+			 * Converts a value object to an internal representation of the address.
+			 * 
+			 * @param {Object} value The address object.
+			 * @return {Array} The options to select.
+			 */
+			_valueToInternalAddress: function(value) {
+				if (!value) return null;
+				
+				var items = []; // rank-based (top-down) ordering
+				this._addressSegments.forEach(function(s) {
+					if (value[s.name]) {
+						var obj = {
+							rank: s.rank,
+							name: value[s.name],
+							metaData: {}
+						};
+						
+						if (s.meta) {
+							for (var k in s.meta) {
+								if (!s.meta.hasOwnProperty(k)) continue;
+								if (value[s.meta[k]])
+									obj.metaData[k] = value[s.meta[k]];
+							}
+						}
+						
+						items.push(obj);
+					}
+				});
+				
+				if (!items.length) {
+					return null;
 				}
-				if (address.nume_superior) {
-					items.push({
-						"rank": 1,
-						"nume": address.nume_superior,
-						"nume_judet": address.nume_judet,
-						"prescurtare_judet": address.prescurtare_judet
-					});
+				var address = items[items.length - 1];
+				address.ancestors = [];
+				for (var i=items.length-2; i>=0; i--) { // iteration order is bottom-up
+					address.ancestors.push(items[i]);
 				}
-				if (address.nume_localitate) {
-					items.push({
-						"rank": 2,
-						"nume": address.nume_localitate,
-						"nume_superior": address.nume_superior,
-						"nume_judet": address.nume_judet,
-						"prescurtare_judet": address.prescurtare_judet
-					});
+				if (value.id) {
+					address.id = value.id;
 				}
-				return items;
+				if (value.siruta) {
+					address.id = value.siruta;
+				}
+				
+				return address;
 			},
 			
 			/**
 			 * Converts a segments list to an address object.
 			 * 
-			 * @param {Array} items The items.
-			 * @return {Object|Boolean} The resulting address object, false if invalid.
+			 * @param {Object} address The internal address object.
+			 * @return {Object|Boolean} The resulting value object, null if invalid.
 			 */
-			_segmentsToAddress: function(items) {
-				console.log(items);
-				var lastItem = items[items.length-1];
-				if (typeof lastItem != 'object') return false;
-				var address = {};
-				if (lastItem.rank == 0) {
-					address.nume_judet = lastItem.nume_judet;
-					address.prescurtare_judet = lastItem.prescurtare_judet;
-				} else if (lastItem.rank == 1) {
-					address.nume_judet = lastItem.nume_judet;
-					address.nume_superior = lastItem.nume;
-					address.prescurtare_judet = lastItem.prescurtare_judet;
-				} else {
-					address.nume_judet = lastItem.nume_judet;
-					address.nume_superior = lastItem.nume_superior;
-					address.nume_localitate = lastItem.nume;
-					address.prescurtare_judet = lastItem.prescurtare_judet;
+			_internalAddressToValue: function(address) {
+				if (!address) {
+					return null;
 				}
-				return address;
+				var value = {
+					siruta: address.id,
+					rank: address.rank
+				};
+				
+				var items = []; // uses rank-based (top-down) ordering
+				if (address.ancestors) {
+					address.ancestors.forEach(function(ancestor) {
+						items.splice(0, 0, ancestor);
+					});
+				}
+				items.push(address);
+				
+				this._addressSegments.some(function(s) {
+					if (!items[s.rank]) return true; // stop iterating
+					
+					value[s.name] = items[s.rank].name;
+					if (s.meta) {
+						for (var k in s.meta) {
+							if (!s.meta.hasOwnProperty(k)) continue;
+							if (items[s.rank].metaData && items[s.rank].metaData[k])
+								value[s.meta[k]] = items[s.rank].metaData[k];
+						}
+					}
+					return false;
+				});
+				return value;
 			}
 			
 		});
