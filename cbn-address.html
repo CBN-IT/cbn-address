@@ -47,9 +47,10 @@
 			</div>
 		</template>
 		
-		<cbn-select id="select" value="{{ _selectedValue }}" always-show-chips free-text
+		<cbn-select id="select" always-show-chips free-text
 					placeholder="[[placeholder]]" data-source="[[ _dataSource ]]"
 					use-iron-list="[[useIronList]]"
+					on-value-changed="_handleInternalValueChanged"
 					on-cbn-form-register="_stopSelectEventPropagation"
 					on-cbn-form-validate="_handleSelectValidation"
 					focusable-ancestor="[[focusableAncestor]]" filter-mode=""
@@ -73,8 +74,7 @@
 				 */
 				value: {
 					type: Object,
-					value: null,
-					observer: '_valueChanged'
+					value: null
 				},
 				
 				/**
@@ -144,7 +144,7 @@
 							{
 								rank: 1, name: 'nume_superior', meta: {
 								shortCountyName: 'prescurtare_judet'
-							}, showAncestorInChip: true, showAncestorInDropdown: true },
+							}, includeInAncestorQuery: true, showAncestorInChip: true, showAncestorInDropdown: true },
 							{
 								rank: 2, name: 'nume_localitate', meta: {
 								shortCountyName: 'prescurtare_judet'
@@ -187,7 +187,7 @@
 				 * - `rank`: the numeric rank;
 				 * - `ancestors`: the component's ancestors (array of other `AddressComponent`s, bottom-up ordering).
 				 */
-				_selectedValue: {
+				_internalValue: {
 					type: Array,
 					value: function() { return null; }
 				}
@@ -196,6 +196,7 @@
 			
 			behaviors: [
 				CbnForm.InputElement,
+				CbnForm.InputValueTransformer,
 				CbnForm.Validatable
 			],
 			
@@ -272,23 +273,26 @@
 						newQuery.maxRank = self.addressRank;
 					}
 					if (this.value) {
-						var ancestors = [ this.value ];
-						if (this.value.ancestors && this.value.ancestors.length)
-							ancestors = ancestors.concat(this.value.ancestors);
-						ancestors.some(function(ancestor) {
-							var segmentOptions = self._addressSegments[ancestor.rank];
-							if (segmentOptions) {
-								if (segmentOptions.includeInAncestorQuery) {
-									if (ancestor.id) {
-										newQuery.ancestor = ancestor.id;
-									} else {
-										newQuery.ancestor = ancestor.name;
+						var queryAncestors = [];
+						if (this.value.ancestors)
+							this.value.ancestors.some(function(ancestor) {
+								var segmentOptions = self._addressSegments[ancestor.rank];
+								if (segmentOptions) {
+									if (segmentOptions.includeInAncestorQuery) {
+										if (ancestor.id) {
+											queryAncestors = [ ancestor.id ];
+											return true; // found it, stop the iteration
+										} else {
+											queryAncestors.push(ancestor.name);
+											return false; // continue adding the rest to the ancestors query
+										}
 									}
-									return true; // found it, stop the iteration
 								}
-							}
-							return false; // continue iterating
-						});
+								return false; // continue iterating
+							});
+						if (queryAncestors.length) {
+							newQuery.ancestor = queryAncestors.join(' ');
+						}
 					}
 					return newQuery;
 				};
@@ -423,41 +427,16 @@
 				};
 				
 				/**
-				 * Cbn-Select commit callback to normalize the selected items and set the address input's value.
+				 * Cbn-Select commit callback to filter out some invalid values.
 				 * 
 				 * @param {Array} items The selected items.
-				 * @param {Boolean|Object} [indirect] The indirect notification object to use.
-				 * @return {Array} The items to commit as value.
+				 * @return {Array} The new value (items) to commit.
 				 */
-				select._commitValueCallback = function (items, indirect) {
+				select._commitValueCallback = function (items) {
 					if (items.length && (typeof items[0] == 'string')) {
 						return null; // disallow free text
 					}
-					var value = self._internalAddressToValue(items[0]);
-					if (!value) value = null;
-					
-					try {
-						self._valueInternallyChanged = true;
-						
-						if (this._inputValueIndirectlyChanged) {
-							// let the parent _setIndirectValue to emit the notification
-							self._setIndirectValue(value, false);
-						} else if (indirect) {
-							self._setIndirectValue(value, ( indirect === true ? null : indirect ));
-						} else {
-							self.value = value;
-							self.fire('value-changed', { value: value });
-						}
-						
-					} finally {
-						self._valueInternallyChanged = false;
-					}
-					
-					// normalize the selected items
-					if (!value) {
-						return [];
-					}
-					return [ self._valueToInternalAddress(value) ];
+					return items;
 				};
 			},
 			
@@ -483,22 +462,40 @@
 			},
 			
 			/**
-			 * Override FormElement behavior's value observer to prevent firing multiple 'value-changed' events.
+			 * Override `CbnForm.InputValueTransformer._handleInternalValueChanged` to skip null reselection events.
+			 * 
+			 * @param {Object} event The event object.
 			 */
-			_fe_valueChanged: function() { /* nothing here */ },
+			_handleInternalValueChanged: function(event) {
+				event.stopPropagation();
+				
+				if (!event.detail) return;
+				var notification = event.detail;
+				
+				if (notification.indirect && notification.reselected && !notification.selectionChanged) {
+					// nothing changed, skip reselection
+					return;
+				}
+				
+				// call the original
+				CbnForm.InputValueTransformer._handleInternalValueChanged.call(this, event);
+			},
 			
 			/**
-			 * Value observer.
+			 * Override `CbnForm.InputValueTransformer._setInternalValue` to directly set the select's value.
+			 * 
+			 * @param {*} internalValue The new internal value to set.
+			 * @param {Boolean|Object} [indirect] Whether to change it directly or indirectly (accepts a notification object).
 			 */
-			_valueChanged: function () {
-				if (this._valueInternallyChanged) return;
-				
-				// change select's value, which will also change this.value
-				var address = this._valueToInternalAddress(this.value);
-				if (this._inputValueIndirectlyChanged) {
-					this.$.select._setIndirectValue(address);
+			_setInternalValue: function(internalValue, indirect) {
+				this._internalValue = internalValue;
+				if (indirect) {
+					this.$.select._setIndirectValue(internalValue, indirect);
 				} else {
-					this.$.select.value = address;
+					this.$.select._setValue(internalValue);
+				}
+				if (internalValue && !internalValue.id) {
+					this._queryAddress();
 				}
 			},
 			
@@ -527,12 +524,44 @@
 			},
 			
 			/**
+			 * Queries the server for a normalized address object.
+			 */
+			_queryAddress: function () {
+				if (!this._dataSource)
+					return;
+				
+				var name = this._internalValue.name;
+				var ancestors = [];
+				if (this._internalValue.ancestors)
+					this._internalValue.ancestors.forEach(function(ancestor) {
+						ancestors.push(ancestor.name);
+					});
+				
+				var ironAjax = this._dataSource.provider.ironAjax;
+				ironAjax.params = {
+					query: name,
+					ancestor: ancestors.join(' '),
+					onlyOwnNames: true
+				};
+				var req = ironAjax.generateRequest();
+				req.completes.then(function() {
+					var response = req.response;
+					if (response && response.length == 1) {
+						this.$.select._setIndirectValue(response[0], {
+							indirect: true,
+							reformatted: true
+						});
+					}
+				}.bind(this));
+			},
+			
+			/**
 			 * Converts a value object to an internal representation of the address.
 			 * 
 			 * @param {Object} value The address object.
 			 * @return {Array} The options to select.
 			 */
-			_valueToInternalAddress: function(value) {
+			_toInternalValue: function(value) {
 				if (!value) return null;
 				
 				var items = []; // rank-based (top-down) ordering
@@ -580,7 +609,7 @@
 			 * @param {Object} address The internal address object.
 			 * @return {Object|Boolean} The resulting value object, null if invalid.
 			 */
-			_internalAddressToValue: function(address) {
+			_fromInternalValue: function(address) {
 				if (!address) {
 					return null;
 				}
