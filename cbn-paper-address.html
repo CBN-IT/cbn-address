@@ -32,7 +32,7 @@ style this element.
 			}
 		</style>
 		
-		<paper-input-container id="container" no-label-float$="[[noLabelFloat]]" attr-for-value="validate-value"
+		<paper-input-container id="container" no-label-float$="[[noLabelFloat]]" attr-for-value="value"
 							   always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]"
 							   auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
 			
@@ -149,12 +149,11 @@ style this element.
 		 * @returns {Boolean} True if the input's displayed value is empty.
 		 */
 		_isInputEmpty: function(input, value) {
-			if (input.$.select._inputValue) {
+			if (input.$.select && input.$.select._inputValue) {
 				return false;
-			} else if (input.multiple) {
-				return !(value && value.length);
 			}
-			return !(value || value === 0);
+			value = input._internalValue;
+			return value === '' || value === undefined || value === null;
 		}
 		
 	});

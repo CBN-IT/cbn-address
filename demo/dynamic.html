@@ -42,14 +42,17 @@
 		var form = tpl.$.demoForm;
 		
 		function updateOutput(event) {
+			if (event)
+				console.trace('value changed', event.target.name, event.detail);
 			/** @namespace tpl.$.stringifiedJson */
 			tpl.$.stringifiedJson.textContent = JSON.stringify(form.model, null, 4);
 		}
 		
 		form.addEventListener('value-changed', updateOutput);
 		updateOutput();
-		tpl.setCeva=function(){
-			form.set("model.raddr2",{
+		
+		tpl.changeAddress = function(){
+			form.set("model.raddr2", {
 				"judet": "Ialomița",
 				"nume_superior": "Municipiul Slobozia",
 				"nume_localitate": "Slobozia"
