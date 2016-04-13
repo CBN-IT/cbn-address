@@ -546,7 +546,7 @@
 				var req = ironAjax.generateRequest();
 				req.completes.then(function() {
 					var response = req.response;
-					if (response && response.length == 1) {
+					if (response && response.length >= 1) {
 						this.$.select._setIndirectValue(response[0], {
 							indirect: true,
 							reformatted: true

@@ -27,7 +27,7 @@
 			</cbn-dynamic-form>
 			
 		</form>
-		<button on-tap="setCeva">Seteaza ceva</button>
+		<button on-tap="setCustomAddress">Seteaza ceva</button>
 		<p style="font-weight: bold;">Output: </p>
 		<pre id="stringifiedJson"></pre>
 		
@@ -51,7 +51,7 @@
 		form.addEventListener('value-changed', updateOutput);
 		updateOutput();
 		
-		tpl.changeAddress = function(){
+		tpl.setCustomAddress = function(){
 			form.set("model.raddr2", {
 				"judet": "Ialomița",
 				"nume_superior": "Municipiul Slobozia",
