@@ -274,22 +274,28 @@
 					}
 					if (this.value) {
 						var queryAncestors = [];
+						var iterAncestors = [];
+						if (this.value.rank < self.addressRank) {
+							iterAncestors.push(this.value);
+						}
 						if (this.value.ancestors)
-							this.value.ancestors.some(function(ancestor) {
-								var segmentOptions = self._addressSegments[ancestor.rank];
-								if (segmentOptions) {
-									if (segmentOptions.includeInAncestorQuery) {
-										if (ancestor.id) {
-											queryAncestors = [ ancestor.id ];
-											return true; // found it, stop the iteration
-										} else {
-											queryAncestors.push(ancestor.name);
-											return false; // continue adding the rest to the ancestors query
-										}
+							iterAncestors = iterAncestors.concat(this.value.ancestors);
+						
+						iterAncestors.some(function(ancestor) {
+							var segmentOptions = self._addressSegments[ancestor.rank];
+							if (segmentOptions) {
+								if (segmentOptions.includeInAncestorQuery) {
+									if (ancestor.id) {
+										queryAncestors = [ ancestor.id ];
+										return true; // found it, stop the iteration
+									} else {
+										queryAncestors.push(ancestor.name);
+										return false; // continue adding the rest to the ancestors query
 									}
 								}
-								return false; // continue iterating
-							});
+							}
+							return false; // continue iterating
+						});
 						if (queryAncestors.length) {
 							newQuery.ancestor = queryAncestors.join(' ');
 						}

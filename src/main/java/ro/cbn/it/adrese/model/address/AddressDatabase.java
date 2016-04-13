@@ -179,6 +179,12 @@ public class AddressDatabase implements Serializable {
 				case "rmax": // maximum rank
 					return address.rank <= Byte.parseByte(query.value);
 				
+				case "a": // query by ancestor name
+					for (AddressComponent ancestor: address.ancestors) {
+						if (ancestor.id.equals(query.value))
+							return true;
+					}
+					return false;
 				case "an": // query by ancestor name
 					for (AddressComponent ancestor: address.ancestors) {
 						if (matchesQuery(ancestor, new SearchToken(query.value)))
