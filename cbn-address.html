@@ -138,7 +138,7 @@
 					type: Array,
 					value: function() {
 						return [
-							{ rank: 0, name: 'judet', meta: {
+							{ rank: 0, name: 'nume_judet', meta: {
 								shortCountyName: 'prescurtare_judet'
 							}, includeInAncestorQuery: true, useMetaForLabel: 'shortCountyName' },
 							{
@@ -500,7 +500,7 @@
 				} else {
 					this.$.select._setValue(internalValue);
 				}
-				if (internalValue && !internalValue.id) {
+				if (internalValue) {
 					this._queryAddress();
 				}
 			},
