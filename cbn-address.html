@@ -155,6 +155,14 @@
 				},
 				
 				/**
+				 * This input has a special value (address object), so use a specific validation type.
+				 */
+				validationType: {
+					type: String,
+					value: 'address'
+				},
+				
+				/**
 				 * Stores the processed address segments (with defaults inferred).
 				 */
 				_addressSegments: {
@@ -225,6 +233,11 @@
 			 */
 			_selectInternallyValidating: false,
 			
+			/**
+			 * True if a queryAddress call is queued for when the element is ready.
+			 */
+			_queryAddressQueuedOnReady: false,
+			
 			/** @namespace this.$.defaultDataSource */
 			
 			
@@ -235,6 +248,12 @@
 					this._dataSource = this.$.defaultDataSource;
 				}
 				this._enhanceCbnSelect();
+				if (this._queryAddressQueuedOnReady) {
+					this._queryAddressQueuedOnReady = false;
+					if (this._internalValue) {
+						this._queryAddress();
+					}
+				}
 			},
 			
 			/**
@@ -533,8 +552,11 @@
 			 * Queries the server for a normalized address object.
 			 */
 			_queryAddress: function () {
-				if (!this._dataSource)
+				if (!this._dataSource || !this._dataSource.provider || !this._dataSource.ironAjax) {
+					this._queryAddressQueuedOnReady = true;
 					return;
+				}
+				this._queryAddressQueuedOnReady = false;
 				
 				var name = this._internalValue.name;
 				var ancestors = [];
@@ -648,6 +670,45 @@
 				return value;
 			}
 			
+		});
+		
+		function validateRank(value, settings/*, input*/) {
+			settings = CbnForm.Validator.normalizeSettings(settings);
+			if (!settings.validate || !value)
+				return true;
+			if (value.rank === undefined || value.rank === null) {
+				return false;
+			}
+			switch (this.name) {
+				case 'minRank':
+					return (value.rank >= settings.validate);
+				case 'maxRank':
+					return (value.rank <= settings.validate);
+			}
+		}
+		
+		/**
+		 * Validates whether a selected address has a minimum rank.
+		 *
+		 * @param {Boolean} settings
+		 */
+		CbnForm.Validator.register({
+			name: 'minRank',
+			types: ['address'],
+			message: 'Invalid address!',
+			validate: validateRank
+		});
+		
+		/**
+		 * Validates whether a selected address has a maximum rank.
+		 *
+		 * @param {Boolean} settings
+		 */
+		CbnForm.Validator.register({
+			name: 'maxRank',
+			types: ['address'],
+			message: 'Invalid address!',
+			validate: validateRank
 		});
 		
 		CbnForm.registerElement('cbn-address', {

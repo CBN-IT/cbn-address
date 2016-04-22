@@ -47,7 +47,8 @@
 			"label": "Max rank 2 (remote)",
 			"addressRank": 2,
 			"validation": {
-				"required": true
+				"required": true,
+				"minRank": 2
 			},
 			"autoValidate": true,
 			"defaultValue": "Two"
