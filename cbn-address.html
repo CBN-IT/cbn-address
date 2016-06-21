@@ -552,7 +552,7 @@
 			 * Queries the server for a normalized address object.
 			 */
 			_queryAddress: function () {
-				if (!this._dataSource || !this._dataSource.provider || !this._dataSource.ironAjax) {
+				if (!this._dataSource || !this._dataSource.provider || !this._dataSource.provider.ironAjax) {
 					this._queryAddressQueuedOnReady = true;
 					return;
 				}
