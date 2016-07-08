@@ -256,6 +256,17 @@
 				}
 			},
 			
+			attached: function() {
+				this.async(function(){
+					if (this._queryAddressQueuedOnReady) {
+						this._queryAddressQueuedOnReady = false;
+						if (this._internalValue) {
+							this._queryAddress();
+						}
+					}
+				}, 5);
+			},
+			
 			/**
 			 * Called when the data source attribute is changed.
 			 * @param dataSource The new data source set.
