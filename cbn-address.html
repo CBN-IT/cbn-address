@@ -1,14 +1,15 @@
+<link rel="import" href="../polymer/polymer.html" />
+<link rel="import" href="../cbn-form/lib/include.html" />
+<link rel="import" href="../cbn-select/cbn-select.html" />
+
 <!--
 `cbn-address` implements a EU NUTS-structured address selection input.
 
 @group CBN Elements
 @element cbn-address
-@demo demo/index.html
+@demo demo/index.html Standard address input demo.
+@demo demo/dynamic.html Dynamic address input demo.
 -->
-
-<link rel="import" href="../polymer/polymer.html" />
-<link rel="import" href="../cbn-form/lib/include.html" />
-<link rel="import" href="../cbn-select/cbn-select.html" />
 
 <dom-module id="cbn-address">
 	<template>
@@ -63,7 +64,6 @@
 	(function (scope) {
 		scope = window.CbnForm.CbnAddress = {};
 		
-		//noinspection JSUnusedGlobalSymbols
 		scope.Prototype = Polymer({
 			is: 'cbn-address',
 			

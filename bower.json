@@ -2,6 +2,10 @@
     "name": "cbn-address",
     "version": "1.0.0",
     "private": true,
+    "main": [
+        "cbn-address.html",
+        "cbn-paper-address.html"
+    ],
     "ignore": [
         "**/.*",
         "node_modules",
