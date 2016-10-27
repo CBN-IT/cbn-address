@@ -6,7 +6,6 @@ import ro.cbn.it.framework.utils.Log;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -174,6 +173,8 @@ public class AddressDatabase implements Serializable {
 			switch (query.type) {
 				case "r": // rank
 					return address.rank == Byte.parseByte(query.value);
+				case "id":
+					return address.id.equals(query.value);
 				case "rmin": // minimum rank
 					return address.rank >= Byte.parseByte(query.value);
 				case "rmax": // maximum rank

@@ -61,6 +61,16 @@ public class SearchAddress extends IController {
 				}
 			}
 		}
+
+		String id = req.getParameter("id");
+		if (id != null && !id.isEmpty()) {
+			Collection<String> ancestorTokens = TextPatternUtils.tokenizeWords(id);
+			for (String ancToken: ancestorTokens) {
+				if (numericAncestorPat.matcher(ancToken).find()) {
+					queryTokens.add("#id=" + ancToken + "$");
+				}
+			}
+		}
 		
 		if (req.getParameter("maxRank") != null && !req.getParameter("maxRank").isEmpty()) {
 			queryTokens.add("#rmax=" + req.getParameter("maxRank") + "$");
