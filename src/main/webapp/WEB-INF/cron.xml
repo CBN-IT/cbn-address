@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cronentries>
 	<cron>
-		<url>/KeepAlive</url>
+		<url>/searchAddress?query=Keep%20Alive</url>
 		<description>Keep One instance on</description>
-		<schedule>every 10 minutes from 7:30 to 23:30</schedule>
+		<schedule>every 10 minutes</schedule>
 		<timezone>Europe/Bucharest</timezone>
 	</cron>
 	
