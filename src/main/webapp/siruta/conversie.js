@@ -1,6 +1,6 @@
 //\t([0-9]+)\t([0-9]+)\t([0-9]+)\t([^\t]+)\t([0-9]+)
 //{"siruta":"$1","tip":"$2","superior":"$3","nume":"$4","judet":"$5"},
-
+//https://data.gov.ro/dataset/siruta-registrul-unitatilor-administrativ-teritoriale-ale-romaniei
 //http://colectaredate.insse.ro/senin/classifications.htm?selectedClassification=SIRUTA_S1_2015&action=download
 
 //[ŢÞ] Ț
