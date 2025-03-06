@@ -9,7 +9,7 @@
     <version>1.0.0</version>
 	<packaging>war</packaging>
     <prerequisites>
-        <maven>3.1.0</maven>
+		<maven>3.5.0</maven>
     </prerequisites>
 	
     <properties>
@@ -22,12 +22,13 @@
 				<automatic-scaling>
 					<min-idle-instances>automatic</min-idle-instances>
 					<max-idle-instances>1</max-idle-instances>
+					<max-instances>1</max-instances>
 					<min-pending-latency>2s</min-pending-latency>
     				<max-pending-latency>10s</max-pending-latency>
 				</automatic-scaling>
 			<!--]]>
         </app.configSettings>
-		
+		<app.appid>cbn-adresa</app.appid>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<maven.compiler.source>1.7</maven.compiler.source>
@@ -36,12 +37,13 @@
         <plugin.appengine.version>1.9.38</plugin.appengine.version>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
     </properties>
+	
     <dependencies>
 		<dependency>
 			<!--our framework-->
 			<groupId>ro.cbn.it</groupId>
 			<artifactId>appengine-framework</artifactId>
-			<version>[1.0.0,]</version>
+			<version>[1.0.229,]</version>
 		</dependency>
 		
         <!-- Compile/runtime dependencies -->
@@ -134,13 +136,6 @@
 						</goals>
 						<phase>package</phase>
 					</execution>
-					<execution>
-						<id>increment</id>
-						<goals>
-							<goal>increment_version</goal>
-						</goals>
-						<phase>package</phase>
-					</execution>
 				</executions>
 				<configuration>
 					<extendedClass>ro.cbn.it.framework.servlet.AbstractIController</extendedClass>
@@ -153,13 +148,10 @@
                 <version>3.1</version>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
                     <excludes>
                         <exclude>**/deprecated/**</exclude>
-                        <!--<exclude>**/utils/ReadJsFile.java</exclude>
-                        <exclude>**/utils/ReadCssFile.java</exclude>
-                        <exclude>**/utils/GenerateWebXml.java</exclude>-->
                     </excludes>
                 </configuration>
             </plugin>
@@ -182,31 +174,43 @@
                     </nonFilteredFileExtensions>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>com.google.appengine</groupId>
-                <artifactId>appengine-maven-plugin</artifactId>
-                <version>${plugin.appengine.version}</version>
-
-                <configuration>
-					<!--<jvmFlags>-->
-						<!--<jvmFlag>-Xdebug</jvmFlag>-->
-						<!--<jvmFlag>-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y</jvmFlag>-->
-					<!--</jvmFlags>-->
-                    <enableJarClasses>false</enableJarClasses>
-                    <!-- Comment in the below snippet to bind to all IPs instead of just localhost -->
-                    <!-- address>0.0.0.0</address>-->
-                    <port>8888</port>
-                </configuration>
-            </plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>appengine-maven-plugin</artifactId>
+				<version>2.2.0</version>
+				<executions>
+					<execution>
+						<id>package-deploy</id>
+						<phase>package</phase>
+						<goals>
+							<goal>deploy</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<enableJarClasses>true</enableJarClasses>
+					<deploy.projectId>${app.appid}</deploy.projectId>
+					<deploy.version>GCLOUD_CONFIG</deploy.version>
+					<deploy.promote>false</deploy.promote>
+					<!-- Comment in the below snippet to bind to all IPs instead of just localhost -->
+					<!-- address>0.0.0.0</address>-->
+					<devserver.port>8081</devserver.port>
+					<!-- Comment in the below snippet to enable local debugging with a remote debugger
+						 like those included with Eclipse or IntelliJ -->
+					<jvmFlags>
+						<jvmFlag>-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n</jvmFlag>
+					</jvmFlags>
+					<cloudSdkHome>C:\Users\Bogdan\AppData\Local\Google\Cloud SDK\google-cloud-sdk</cloudSdkHome>
+				</configuration>
+			</plugin>
         </plugins>
     </build>
 	<pluginRepositories>
 		<pluginRepository>
 			<id>cbn-mvn</id>
-			<name>>cbn-it</name>
+			<name>cbn-it</name>
 			<releases>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
 			</releases>
 			<url>https://api.bitbucket.org/1.0/repositories/cbn-it/mvn-repo/raw/releases</url>
 		</pluginRepository>
@@ -214,10 +218,9 @@
 	<repositories>
 		<repository>
 			<id>cbn-mvn</id>
-			<name>>cbn-it</name>
+			<name>cbn-it</name>
 			<releases>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
 			</releases>
 			<url>https://api.bitbucket.org/1.0/repositories/cbn-it/mvn-repo/raw/releases</url>
 		</repository>
